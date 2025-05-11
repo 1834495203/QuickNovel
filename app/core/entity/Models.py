@@ -1,4 +1,5 @@
 # 定义聊天内容类
+from datetime import datetime
 from enum import Enum
 from typing import Optional, List, Any
 
@@ -46,6 +47,7 @@ class ChatContent:
             self,
             role: str,
             content: Any,
+            create_time: datetime = None,
             reasoning_content: Optional[str] = None,
             tool_calls: Optional[List[Any]] = None,
             name: Optional[str] = None,
@@ -57,7 +59,7 @@ class ChatContent:
             total_tokens: Optional[int] = None,
             chat_type: Optional[ChatMessageType] = None,
             user_card: Optional[UserCard] = None,
-            merge_count:int = 0,
+            merge_count: int = 0,
     ):
         # 对话的角色
         self.role = role
@@ -86,6 +88,8 @@ class ChatContent:
 
         # 对话被合并的次数
         self.merge_count = merge_count
+
+        self.create_time = create_time
 
     def __str__(self):
         role_map = {

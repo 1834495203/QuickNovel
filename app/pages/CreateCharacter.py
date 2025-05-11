@@ -1,8 +1,9 @@
 import streamlit as st
-from core.entity.CharacterCard import *
 import pandas as pd
-import os
 import datetime
+
+from core.entity.CharacterCard import *
+from core.service.CharacerService import *
 
 # 设置保存图片的目录
 SAVE_DIR = "./static"
@@ -16,7 +17,6 @@ st.title("角色卡信息填写")
 with st.form("character_card_form"):
     st.header("基础信息")
     # SimpleCharacterCard 字段
-    character_id = st.number_input("角色唯一标识符 (ID)", min_value=1, step=1, value=1)
 
     # 图片上传
     avatar_path = None
@@ -29,7 +29,7 @@ with st.form("character_card_form"):
             # 生成唯一文件名
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             original_filename = uploaded_file.name
-            new_filename = f"avatar_{character_id}_{timestamp}_{original_filename}"
+            new_filename = f"avatar_{timestamp}_{original_filename}"
             avatar_path = os.path.join(SAVE_DIR, new_filename)
 
             # 保存图片到 ./static
@@ -84,7 +84,7 @@ with st.form("character_card_form"):
     st.write("填写知识领域和兴趣爱好:")
     # Abilities - knowledge (使用 data_editor)
     knowledge_data = st.data_editor(
-        pd.DataFrame([{"知识领域": "", "兴趣爱好": ""}]), # 初始数据
+        pd.DataFrame([{"知识领域": "", "兴趣爱好": ""}]),  # 初始数据
         num_rows="dynamic",
         column_config={
             "知识领域": st.column_config.TextColumn("知识领域", required=True),
@@ -119,10 +119,9 @@ if submitted:
         hobby_list = [row["兴趣爱好"] for row in knowledge_data.to_dict(orient='records') if row.get("兴趣爱好")]
         customize_fields_list = [Distinctive(**row) for row in customize_fields_data.to_dict(orient='records') if row.get("fieldName") and row.get("fieldValue")]
 
-
         # 构建 Pydantic 模型实例
         simple_card = SimpleCharacterCard(
-            id=character_id,
+            id=get_id(),
             avatar=avatar_path if avatar_path else None,
             name=name if name else None,
             description=description if description else None,
@@ -135,7 +134,7 @@ if submitted:
         customize_obj = CustomizeFields(fields=customize_fields_list) if customize_fields_list else None
 
         character_card = CharacterCard(
-            **simple_card.model_dump(exclude_none=True), # 使用 model_dump 并排除 None 值
+            **simple_card.model_dump(exclude_none=True),  # 使用 model_dump 并排除 None 值
             personality=personality_obj,
             background=background_obj,
             behaviors=behaviors_obj,
@@ -144,7 +143,8 @@ if submitted:
         )
 
         st.success("角色卡数据已生成:")
-        st.json(character_card.model_dump_json(indent=2)) # 显示生成的 JSON 数据
+        st.json(character_card.model_dump_json(indent=2))  # 显示生成的 JSON 数据
+        add_character(card=character_card)
 
     except Exception as e:
         st.error(f"生成角色卡时出错: {e}")
