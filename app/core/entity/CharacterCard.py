@@ -56,15 +56,6 @@ class Behaviors(BaseModel):
         from_attributes = True
 
 
-# 能力和专长类
-class Abilities(BaseModel):
-    knowledge: Optional[List[str]] = []  # 知识领域
-    hobby: Optional[List[str]] = []      # 兴趣爱好
-
-    class Config:
-        from_attributes = True
-
-
 class Distinctive(BaseModel):
     fieldName: str
     fieldValue: str
@@ -80,7 +71,6 @@ class CharacterCard(SimpleCharacterCard):
     personality: Optional[Personality] = None   # 选填：性格详情
     background: Optional[Background] = None     # 选填：背景详情
     behaviors: Optional[Behaviors] = None       # 选填：行为详情
-    abilities: Optional[Abilities] = None       # 能力和专长
     customize: Optional[CustomizeFields] = None # 用户自定义类型
 
     class Config:

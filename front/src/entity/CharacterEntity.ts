@@ -21,11 +21,6 @@ interface Behaviors {
   speakingStyle: Speaking[];
 }
 
-interface Abilities {
-  knowledge?: string[];
-  hobby?: string[];
-}
-
 interface Distinctive {
   fieldName: string;
   fieldValue: string;
@@ -43,6 +38,5 @@ export interface CharacterCard {
   personality?: Personality;
   background?: Background;
   behaviors?: Behaviors;
-  abilities?: Abilities;
   customize?: CustomizeFields;
 }
