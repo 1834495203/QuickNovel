@@ -34,6 +34,7 @@ const breadcrumbs = computed(() => {
       <div class="nav-buttons">
         <button @click="goTo('/')" :class="{ active: route.path === '/' }">首页</button>
         <button @click="goTo('/characters')" :class="{ active: route.path === '/characters' }">角色信息</button>
+        <button @click="goTo('/character/create')" :class="{ active: route.path === '/character/create' }">创建角色</button>
       </div>
     </header>
 

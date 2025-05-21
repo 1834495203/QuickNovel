@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
-from typing import List
+import json
+
+from fastapi import APIRouter, HTTPException, UploadFile, Form
 
 from core.entity.ResponseEntity import ResponseModel
 from core.service.CharacerService import (
@@ -29,9 +30,13 @@ async def create_character(character: CharacterCard):
 
 
 @characters_router.put("/{character_id}", response_model=ResponseModel)
-async def update_character_by_id(character_id: int, character: CharacterCard):
-    character.id = character_id
-    return update_character(character_id, character)
+async def update_character_by_id(character_id: int, character: str = Form(...), uploadFile: UploadFile = None):
+    # 将字符串解析为 JSON 对象
+    character_dict = json.loads(character)
+    # 转换为 Pydantic 模型
+    character_model = CharacterCard(**character_dict)
+    character_model.id = character_id
+    return update_character(character_id, character_model, uploadFile)
 
 @characters_router.delete("/{character_id}")
 async def delete_character_by_id(character_id: int):

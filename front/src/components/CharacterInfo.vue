@@ -2,7 +2,24 @@
   <div v-if="character" class="character-info" :class="{ 'is-expanded': isExpanded }">
     <div @click="!isEditing && toggleExpand()" class="card-header"
       :style="{ cursor: isEditing ? 'default' : 'pointer' }">
-      <img :src="character.avatar" alt="Avatar" v-if="character.avatar" class="avatar-small" />
+      <img 
+        :src="computedAvatarDisplayPath" 
+        alt="Avatar" 
+        v-if="computedAvatarDisplayPath" 
+        class="avatar-small"
+        @click="isEditing && handleAvatarAreaClick()" 
+        :style="{ cursor: isEditing ? 'pointer' : 'default' }" 
+      />
+      <div v-if="!computedAvatarDisplayPath && isEditing" 
+           class="avatar-placeholder avatar-small"
+           @click="handleAvatarAreaClick()"
+           :style="{ cursor: 'pointer' }">
+        点击上传
+      </div>
+      <div v-else-if="!computedAvatarDisplayPath" class="avatar-placeholder avatar-small">无头像</div>
+
+      <input type="file" ref="avatarInputRef" @change="handleAvatarFileChange" accept="image/*" style="display: none;" />
+
       <div v-if="!isEditing" style="flex-grow: 1;">
         <h2>{{ character.name }}</h2>
       </div>
@@ -123,11 +140,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, defineProps, defineEmits } from 'vue';
+import { ref, watch, defineProps, defineEmits, computed } from 'vue';
 import type { CharacterCard } from '../entity/CharacterEntity.ts';
 import { updateCharacterById } from '../api/characterApi';
 import { deleteCharacterById } from '../api/characterApi';
 import { showConfirm } from '../utils/showConfirm.ts';
+import { baseURL } from '../axios/axios.ts';
 
 // props 和 emits
 const props = defineProps<{
@@ -141,6 +159,45 @@ const isExpanded = ref(false);
 const isEditing = ref(false);
 const editableCharacter = ref<CharacterCard | null>(null);
 
+const avatarInputRef = ref<HTMLInputElement | null>(null);
+const selectedAvatarFileRef = ref<File | null>(null);
+const avatarPreviewUrlRef = ref<string | null>(null);
+
+const computedAvatarDisplayPath = computed(() => {
+  if (isEditing.value) {
+    if (avatarPreviewUrlRef.value) { // New avatar selected for preview
+      return avatarPreviewUrlRef.value;
+    }
+    // Existing avatar in edit mode (from editableCharacter)
+    if (editableCharacter.value && editableCharacter.value.avatar) {
+      return `${baseURL}/static/${editableCharacter.value.avatar}`;
+    }
+  } else { // View mode (from props)
+    if (props.character && props.character.avatar) {
+      return `${baseURL}/static/${props.character.avatar}`;
+    }
+  }
+  return ''; // Return empty string or a path to a default placeholder avatar
+});
+
+const handleAvatarAreaClick = () => {
+  if (isEditing.value) {
+    avatarInputRef.value?.click();
+  }
+};
+
+const handleAvatarFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files[0]) {
+    const file = target.files[0];
+    selectedAvatarFileRef.value = file;
+    if (avatarPreviewUrlRef.value) {
+      URL.revokeObjectURL(avatarPreviewUrlRef.value); // Revoke old blob URL if any
+    }
+    avatarPreviewUrlRef.value = URL.createObjectURL(file);
+  }
+};
+
 const toggleExpand = () => {
   if (!isEditing.value) {
     isExpanded.value = !isExpanded.value;
@@ -149,6 +206,13 @@ const toggleExpand = () => {
 
 const startEdit = () => {
   editableCharacter.value = JSON.parse(JSON.stringify(props.character));
+  
+  selectedAvatarFileRef.value = null;
+  if (avatarPreviewUrlRef.value) {
+    URL.revokeObjectURL(avatarPreviewUrlRef.value);
+  }
+  avatarPreviewUrlRef.value = null;
+
   if (editableCharacter.value) {
     if (!editableCharacter.value.personality) {
       editableCharacter.value.personality = { traits: [] };
@@ -184,11 +248,21 @@ const confirmEdit = async () => {
     if (!confirm) {
       return;
     }
+
+    const characterData = { ...editableCharacter.value };
+    console.log('characterData', characterData);
+    
     try {
-      await updateCharacterById(props.character.id, editableCharacter.value);
+      await updateCharacterById(props.character.id, characterData, selectedAvatarFileRef.value); 
       emit('character-updated');
       isEditing.value = false;
       isExpanded.value = false;
+      
+      if (avatarPreviewUrlRef.value) {
+        URL.revokeObjectURL(avatarPreviewUrlRef.value);
+      }
+      avatarPreviewUrlRef.value = null;
+      selectedAvatarFileRef.value = null;
       editableCharacter.value = null;
     } catch (error) {
       console.error('Failed to update character:', error);
@@ -197,6 +271,12 @@ const confirmEdit = async () => {
 };
 
 const cancelEdit = () => {
+  if (avatarPreviewUrlRef.value) {
+    URL.revokeObjectURL(avatarPreviewUrlRef.value);
+  }
+  avatarPreviewUrlRef.value = null;
+  selectedAvatarFileRef.value = null;
+  
   isEditing.value = false;
   isExpanded.value = false;
   editableCharacter.value = null;
@@ -327,6 +407,18 @@ watch(() => props.character, (newCharacter, oldCharacter) => {
   border-radius: 50%;
   margin-right: 12px;
   border: 2px solid #eee;
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+  color: #888;
+  font-size: 0.7em;
+  text-align: center;
+  line-height: 1.2;
+  word-break: break-all;
 }
 
 .character-info h2 {
@@ -590,3 +682,4 @@ watch(() => props.character, (newCharacter, oldCharacter) => {
   }
 }
 </style>
+``` 

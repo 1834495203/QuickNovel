@@ -1,9 +1,11 @@
 import axios from "axios";
-import { showNotify } from "../utils/notify";
+import { showNotify, showNotifyResp } from "../utils/notify";
+
+export const baseURL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:9000";
 
 // 创建 Axios 实例
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:9000",
+  baseURL: baseURL,
   timeout: 10000, // 请求超时时间
   headers: {
     "Content-Type": "application/json",
@@ -35,7 +37,7 @@ instance.interceptors.response.use(
       return response;
     } else {
       // 非 200 状态码，显示错误信息
-      showNotify(res);
+      showNotifyResp(res);
       return Promise.reject(new Error(res.message || "操作失败"));
     }
   },

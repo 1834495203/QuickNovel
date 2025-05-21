@@ -31,9 +31,22 @@ export const createCharacter = async (character: CharacterCard): Promise<Charact
   return responseData.data;
 };
 
-export const updateCharacterById = async (characterId: number, character: CharacterCard): Promise<ResponseModel> => {
-  // 假设后端在成功更新后，在 ResponseModel.data 中返回 CharacterCard
-  const responseData = await apiClient.put<ResponseModel>(`${CHARACTER_API_BASE_PATH}/${characterId}`, character);
+export const updateCharacterById = async (characterId: number, character: CharacterCard, avatar: File | null): Promise<ResponseModel> => {
+  // 使用 FormData 发送 character 和 avatar
+  const formData = new FormData();
+  formData.append('character', JSON.stringify(character));
+  if (avatar) {
+    formData.append('uploadFile', avatar);
+  }
+  const responseData = await apiClient.put<ResponseModel>(
+    `${CHARACTER_API_BASE_PATH}/${characterId}`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
   showNotifyResp(responseData.data); // 显示通知
   return responseData.data;
 };
