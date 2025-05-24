@@ -12,7 +12,7 @@ import os
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = f"{CURRENT_DIR}/../../static"
-db_path = f'{CURRENT_DIR}\\db\\characters.jsonl'
+db_path = f'{CURRENT_DIR}/db/characters.jsonl'
 
 def load_all_characters() -> ResponseModel[List[CharacterCard]]:
     try:

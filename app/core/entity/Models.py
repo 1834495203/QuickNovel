@@ -29,8 +29,8 @@ class ChatContentMain:
                  role: str,
                  content: str,
                  chat_type: ChatMessageType,
-                 user: UserCard,
-                 character: CharacterCard,
+                 user: Optional[UserCard] = None,
+                 character: Optional[CharacterCard] = None,
                  reasoning_content: Optional[str] = None,
                  create_time: datetime = None):
         self.cid = cid                                       # 对话唯一id

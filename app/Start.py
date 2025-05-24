@@ -4,7 +4,6 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from controller.CharacterController import characters_router
-from controller.ChattingController import chatting_router
 from controller.ProvidersController import providers_router
 
 app = FastAPI(
@@ -26,8 +25,6 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.include_router(characters_router)
-
-app.include_router(chatting_router)
 
 app.include_router(providers_router)
 
