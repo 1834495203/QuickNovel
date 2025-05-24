@@ -29,39 +29,43 @@ class ChatContentMain:
                  role: str,
                  content: str,
                  chat_type: ChatMessageType,
-                 users: List[UserCard],
-                 characters: List[CharacterCard],
-                 reasoning_content: Optional[str] = None,):
+                 user: UserCard,
+                 character: CharacterCard,
+                 reasoning_content: Optional[str] = None,
+                 create_time: datetime = None):
         self.cid = cid                                       # 对话唯一id
         self.role = role                                     # 角色
         self.content = content                               # 消息
         self.chat_type = chat_type                           # 对话类型
-        self.users = users                                   # 用户角色
-        self.characters = characters                         # 对话角色
+        self.user = user                                     # 用户角色
+        self.character = character                           # 对话角色
         self.reasoning_content = reasoning_content           # 推理
+        self.create_time = create_time
 
 
 # 原始的 ChatContent 类，添加 token 相关字段
-class ChatContent:
-    def __init__(
-            self,
-            role: str,
-            content: Any,
-            create_time: datetime = None,
-            reasoning_content: Optional[str] = None,
-            tool_calls: Optional[List[Any]] = None,
-            name: Optional[str] = None,
-            tool_call_id: Optional[str] = None,
-            finish_reason: Optional[str] = None,
-            message: Optional[Any] = None,
-            prompt_tokens: Optional[int] = None,
-            completion_tokens: Optional[int] = None,
-            total_tokens: Optional[int] = None,
-            chat_type: Optional[ChatMessageType] = None,
-            user_card: Optional[UserCard] = None,
-            merge_count: int = 0,
-    ):
+class ChatContent(ChatContentMain):
+    def __init__(self,
+                 role: str,
+                 content: Any,
+                 cid: int,
+                 user: UserCard,
+                 character: CharacterCard,
+                 create_time: datetime = None,
+                 reasoning_content: Optional[str] = None,
+                 tool_calls: Optional[List[Any]] = None,
+                 name: Optional[str] = None,
+                 tool_call_id: Optional[str] = None,
+                 finish_reason: Optional[str] = None,
+                 message: Optional[Any] = None,
+                 prompt_tokens: Optional[int] = None,
+                 completion_tokens: Optional[int] = None,
+                 total_tokens: Optional[int] = None,
+                 chat_type: Optional[ChatMessageType] = None,
+                 user_card: Optional[UserCard] = None,
+                 merge_count: int = 0):
         # 对话的角色
+        super().__init__(cid, role, content, chat_type, user, character, reasoning_content, create_time)
         self.role = role
 
         # 消息的具体内容，和模型推理部分

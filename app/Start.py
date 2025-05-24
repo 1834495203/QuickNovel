@@ -4,6 +4,8 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from controller.CharacterController import characters_router
+from controller.ChattingController import chatting_router
+from controller.ProvidersController import providers_router
 
 app = FastAPI(
     title="QuickNovel API",
@@ -25,9 +27,15 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.include_router(characters_router)
 
+app.include_router(chatting_router)
+
+app.include_router(providers_router)
+
+
 @app.get("/")
 async def root():
     return {"message": "欢迎使用QuickNovel API"}
+
 
 @app.get("/health")
 async def health_check():
