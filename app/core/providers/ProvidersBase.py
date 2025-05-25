@@ -4,8 +4,7 @@ from uuid import uuid4
 import time
 from dataclasses import dataclass
 
-from core.entity.Chat import Chat
-from core.entity.Models import ChatContent, ChatMessageType
+from core.entity.Models import ChatContent, ChatMessageType, Chat
 
 
 # 用于存储单次token使用记录的数据类

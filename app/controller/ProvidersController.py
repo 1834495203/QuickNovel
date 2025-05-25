@@ -1,18 +1,14 @@
 import asyncio
 import uuid
-from datetime import datetime
-from enum import Enum
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 
 from fastapi import APIRouter
-from fastapi.params import Query
 from fastapi.responses import StreamingResponse
 import json
 import random
 
-from pydantic import BaseModel
-
-from core.entity.CharacterCard import UserCard, CharacterCard
+from core.entity.Conversation import ChatContentMain, ChatContentMainResp
+from core.entity.Models import ChatMessageType
 from core.providers.Deepseek import DeepSeekChat
 
 providers_router = APIRouter(prefix="/api/providers", tags=["providers"])
@@ -22,46 +18,8 @@ providers_router = APIRouter(prefix="/api/providers", tags=["providers"])
 chat = DeepSeekChat(model="deepseek-chat")
 
 
-class ChatMessageTypeTest(Enum):
-    # 系统级别的prompt
-    SYSTEM_PROMPT = 0
-    # 角色的信息
-    CHARACTER_TYPE = 1
-    # 用户的信息
-    USER_TYPE = 2
-    # 一般的用户发的信息
-    NORMAL_MESSAGE_USER = 3
-    # 一般的llm回复的消息
-    NORMAL_MESSAGE_ASSISTANT = 4
-    # 旁白
-    ASIDE_MESSAGE = 5
-    # 联网搜索的信息
-    ONLINE_MESSAGE = 6
-    # 流式传输的数据
-    NORMAL_MESSAGE_ASSISTANT_PART = 7
-    # 排除的数据，报错
-    EXCLUDE_MESSAGE_EXCEPTION = 8
-
-
-# 定义 API 聊天模型
-class ChatContentMainTest(BaseModel):
-        cid: str                                         # 对话唯一id
-        role: str                                        # 角色
-        content: str                                     # 消息
-        chat_type: ChatMessageTypeTest                   # 对话类型
-        user: Optional[UserCard] = None                  # 用户角色
-        character: Optional[CharacterCard] = None        # 对话角色
-        reasoning_content: Optional[str] = None          # 推理
-        create_time: Optional[datetime] = None           # 时间
-
-
-class ChatContentMainResp(ChatContentMainTest):
-        is_complete: bool
-        is_partial: bool
-
-
 # 模拟的流式响应生成器函数
-async def stream_llm_response_test(input_data: ChatContentMainTest) -> AsyncGenerator[str, None]:
+async def stream_llm_response_test(input_data: ChatContentMain) -> AsyncGenerator[str, None]:
     try:
         # 模拟不同类型的响应内容
         mock_responses = [
@@ -120,11 +78,12 @@ async def stream_llm_response_test(input_data: ChatContentMainTest) -> AsyncGene
                 # 使用 .json() 方法直接生成 JSON 字符串
                 response_obj = ChatContentMainResp(
                     cid=str(uuid.uuid4()),
+                    conversation_id=1,
                     role="assistant",
                     content=content,
                     is_partial=False,
                     is_complete=True,
-                    chat_type=ChatMessageTypeTest.NORMAL_MESSAGE_ASSISTANT_PART
+                    chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT_PART
                 )
                 yield response_obj.model_dump_json() + "\n"
 
@@ -134,22 +93,24 @@ async def stream_llm_response_test(input_data: ChatContentMainTest) -> AsyncGene
         # 发送最终完整响应
         final_response = ChatContentMainResp(
             cid=str(uuid.uuid4()),
+            conversation_id=1,
             role="assistant",
             content=accumulated_content,
             is_partial=True,
             is_complete=False,
-            chat_type=ChatMessageTypeTest.NORMAL_MESSAGE_ASSISTANT
+            chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT
         )
         yield final_response.model_dump_json() + "\n"
 
     except Exception as e:
         error_response = ChatContentMainResp(
             cid=str(uuid.uuid4()),
+            conversation_id=1,
             role="exception",
             content=str(e),
             is_partial=True,
             is_complete=False,
-            chat_type=ChatMessageTypeTest.EXCLUDE_MESSAGE_EXCEPTION
+            chat_type=ChatMessageType.EXCLUDE_MESSAGE_EXCEPTION
         )
         yield error_response.model_dump_json() + "\n"
 
@@ -161,7 +122,7 @@ async def call_llm(message: ChatContentMainResp):
 
 
 # 抽取的流式响应生成器函数
-async def stream_llm_response(input_data: ChatContentMainTest) -> AsyncGenerator[str, None]:
+async def stream_llm_response(input_data: ChatContentMain) -> AsyncGenerator[str, None]:
     try:
         # 准备消息
         api_messages = chat.prepare_messages(input_data.content)
@@ -177,9 +138,10 @@ async def stream_llm_response(input_data: ChatContentMainTest) -> AsyncGenerator
                 accumulated_content += content
                 yield json.dumps(ChatContentMainResp(
                     cid=str(uuid.uuid4()),
+                    conversation_id=1,
                     role="assistant",
                     content=content,
-                    chat_type=ChatMessageTypeTest.NORMAL_MESSAGE_ASSISTANT,
+                    chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT,
                     is_complete=True,
                     is_partial=False
                 )) + "\n"
@@ -187,8 +149,9 @@ async def stream_llm_response(input_data: ChatContentMainTest) -> AsyncGenerator
         chat.chat.set_message(ChatContentMainResp(
             cid=str(uuid.uuid4()),
             role="assistant",
+            conversation_id=1,
             content=accumulated_content,
-            chat_type=ChatMessageTypeTest.NORMAL_MESSAGE_ASSISTANT_PART,
+            chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT_PART,
             is_complete=False,
             is_partial=True
         ))
