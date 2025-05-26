@@ -79,6 +79,7 @@ async def stream_llm_response_test(input_data: ChatContentMain) -> AsyncGenerato
                 response_obj = ChatContentMainResp(
                     cid=str(uuid.uuid4()),
                     conversation_id=1,
+                    user_role_id=1,
                     role="assistant",
                     content=content,
                     is_partial=False,
@@ -94,6 +95,7 @@ async def stream_llm_response_test(input_data: ChatContentMain) -> AsyncGenerato
         final_response = ChatContentMainResp(
             cid=str(uuid.uuid4()),
             conversation_id=1,
+            user_role_id=1,
             role="assistant",
             content=accumulated_content,
             is_partial=True,
@@ -106,6 +108,7 @@ async def stream_llm_response_test(input_data: ChatContentMain) -> AsyncGenerato
         error_response = ChatContentMainResp(
             cid=str(uuid.uuid4()),
             conversation_id=1,
+            user_role_id=1,
             role="exception",
             content=str(e),
             is_partial=True,
@@ -139,6 +142,7 @@ async def stream_llm_response(input_data: ChatContentMain) -> AsyncGenerator[str
                 yield json.dumps(ChatContentMainResp(
                     cid=str(uuid.uuid4()),
                     conversation_id=1,
+                    user_role_id=1,
                     role="assistant",
                     content=content,
                     chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT,
@@ -149,6 +153,7 @@ async def stream_llm_response(input_data: ChatContentMain) -> AsyncGenerator[str
         chat.chat.set_message(ChatContentMainResp(
             cid=str(uuid.uuid4()),
             role="assistant",
+            user_role_id=1,
             conversation_id=1,
             content=accumulated_content,
             chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT_PART,

@@ -186,6 +186,8 @@ const handleSend = async () => {
     const requestBody = {
       cid: Date.now().toString(),
       role: 'user',
+      user_role_id: 1,
+      conversation_id: 1,
       content: message,
       is_complete: true,
       is_partial: false,
