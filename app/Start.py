@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from controller.CharacterController import characters_router
+from controller.ConvChatController import conv_chat_router
 from controller.ProvidersController import providers_router
 
 app = FastAPI(
@@ -28,15 +29,12 @@ app.include_router(characters_router)
 
 app.include_router(providers_router)
 
+app.include_router(conv_chat_router)
 
 @app.get("/")
 async def root():
     return {"message": "欢迎使用QuickNovel API"}
 
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=9000)

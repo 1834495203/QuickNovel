@@ -35,6 +35,7 @@ class Conversation(BaseModel):
 class ChatContentMain(BaseModel):
     cid: str                                         # 对话唯一id
     conversation_id: int                             # 会话唯一id
+    user_role_id: int                                # 单次对话用户唯一id
     role: str                                        # 角色
     content: str                                     # 消息
     chat_type: ChatMessageType                       # 对话类型
