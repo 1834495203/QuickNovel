@@ -1,11 +1,11 @@
 # 定义聊天内容类
 from typing import Optional, List, Any
 
-from core.entity.Conversation import ChatContentMain, ChatMessageType
+from core.entity.Conversation import ChatMessageType, ChatContentBase
 
 
 # 使用于llm的对话信息
-class ChatContent(ChatContentMain):
+class ChatContent(ChatContentBase):
     # 新增字段：OpenAI 接口返回的字段
     tool_calls: Optional[List[Any]] = None  # 工具调用列表
     name: Optional[str] = None              # 消息名称

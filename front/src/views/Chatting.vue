@@ -25,6 +25,7 @@
           </button>
         </div>
       </div>
+      <div v-else><span>无角色对话</span></div>
     </div>
     
     <div class="chat-messages" ref="messagesContainer">
@@ -158,7 +159,7 @@ onMounted(async () => {
     }
   } else {
     showNotify({
-      type: 'error',
+      type: 'info',
       message: `无角色对话`,
       duration: 3000
     })
@@ -308,7 +309,6 @@ const handleStreamResponse = (data: string) => {
 
 // 发送消息
 const handleSend = async () => {
-  console.log('character_id:', character_id)
   const message = inputMessage.value.trim()
   if (!message || isStreaming.value || !selectedConversationId.value) return
 

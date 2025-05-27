@@ -43,12 +43,15 @@ class ConversationWithChatsResponse(BaseModel):
     conversation: ConversationResponse
     chats: List[ChatContentResponse]
 
+
 # 依赖注入
 def get_conversation_service():
     return ConversationService()
 
+
 def get_chat_content_service():
     return ChatContentService()
+
 
 @conv_chat_router.post("/conversations", response_model=ConversationResponse)
 async def create_conversation(

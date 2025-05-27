@@ -44,7 +44,8 @@ class AbstractChat(ABC):
                 role="system",
                 content=system_prompt,
                 reasoning_content=None,
-                tool_calls=None
+                tool_calls=None,
+                chat_type=ChatMessageType.SYSTEM_PROMPT
             ))
 
         if user_input is not None:
@@ -52,7 +53,8 @@ class AbstractChat(ABC):
                 role="user",
                 content=user_input,
                 reasoning_content=None,
-                tool_calls=None
+                tool_calls=None,
+                chat_type=ChatMessageType.NORMAL_MESSAGE_USER
             )
             self.chat.messages.append(user_message)
 

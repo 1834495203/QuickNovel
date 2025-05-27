@@ -24,6 +24,7 @@ class ChatMessageType(Enum):
     # 排除的数据，报错
     EXCLUDE_MESSAGE_EXCEPTION = 8
 
+
 class Conversation(BaseModel):
     root_conversation_id: int                        # 表示上一个父节点的会话id -1表示根节点
     conversation_id: int                             # 会话唯一id
@@ -31,19 +32,23 @@ class Conversation(BaseModel):
     create_time: Optional[float] = None              # 创建时间戳
 
 
-# 定义 API 聊天模型，存入数据库
-class ChatContentMain(BaseModel):
-    cid: str                                         # 对话唯一id
-    conversation_id: int                             # 会话唯一id
-    user_role_id: int                                # 单次对话用户唯一id
+# 最基础对话实体类
+class ChatContentBase(BaseModel):
     role: str                                        # 角色
     content: str                                     # 消息
     chat_type: ChatMessageType                       # 对话类型
     reasoning_content: Optional[str] = None          # 推理内容
+
+
+# 定义 API 聊天模型，存入数据库
+class ChatContentMain(ChatContentBase):
+    cid: str                                         # 对话唯一id
+    conversation_id: Optional[int]                   # 会话唯一id
+    user_role_id: Optional[int]                      # 单次对话用户唯一id
     create_time: Optional[float] = None              # 时间
 
 
 # 返回和接收前端的额外参数
 class ChatContentMainResp(ChatContentMain):
-        is_complete: bool
-        is_partial: bool
+    is_complete: bool
+    is_partial: bool

@@ -2,20 +2,26 @@ import asyncio
 import uuid
 from typing import AsyncGenerator
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import json
 import random
 
 from core.entity.Conversation import ChatContentMain, ChatContentMainResp
-from core.entity.Models import ChatMessageType
+from core.entity.Models import ChatMessageType, ChatContent
 from core.providers.Deepseek import DeepSeekChat
+from core.providers.Grok import GrokChat
+from core.service.ConvChatService import ChatContentService
 
 providers_router = APIRouter(prefix="/api/providers", tags=["providers"])
 
 # 初始化 GrokChat
 # chat = GrokChat(model="grok-3-mini")  # 使用 grok-3-mini 模型，可根据需要更改
 chat = DeepSeekChat(model="deepseek-chat")
+
+
+def get_chat_content_service():
+    return ChatContentService()
 
 
 # 模拟的流式响应生成器函数
@@ -121,7 +127,9 @@ async def stream_llm_response_test(input_data: ChatContentMain) -> AsyncGenerato
 # 独立的 LLM API，供外部调用
 @providers_router.post("/llm")
 async def call_llm(message: ChatContentMainResp):
-    return StreamingResponse(stream_llm_response_test(message), media_type="text/event-stream")
+    chat_content_service: ChatContentService = Depends(get_chat_content_service)
+    resp = chat_content_service.get_by_conversation_id(message.conversation_id)
+    return StreamingResponse(stream_llm_response(message), media_type="text/event-stream")
 
 
 # 抽取的流式响应生成器函数
@@ -129,43 +137,42 @@ async def stream_llm_response(input_data: ChatContentMain) -> AsyncGenerator[str
     try:
         # 准备消息
         api_messages = chat.prepare_messages(input_data.content)
-
         # 调用流式 API
         response = chat.call_api(api_messages, stream=True)
-
         accumulated_content = ""
         for chunk in response:
             chunk_data = chat.parse_chunk(chunk)
             content = chunk_data.get("content")
             if content:  # 仅发送非空内容
                 accumulated_content += content
-                yield json.dumps(ChatContentMainResp(
+                # 使用 .json() 方法直接生成 JSON 字符串
+                response_obj = ChatContentMainResp(
                     cid=str(uuid.uuid4()),
                     conversation_id=1,
                     user_role_id=1,
                     role="assistant",
                     content=content,
-                    chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT,
+                    is_partial=False,
                     is_complete=True,
-                    is_partial=False
-                )) + "\n"
+                    chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT_PART
+                )
+                yield response_obj.model_dump_json() + "\n"
 
-        chat.chat.set_message(ChatContentMainResp(
-            cid=str(uuid.uuid4()),
-            role="assistant",
-            user_role_id=1,
-            conversation_id=1,
-            content=accumulated_content,
-            chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT_PART,
-            is_complete=False,
-            is_partial=True
-        ))
         # 发送最终完整响应
-        yield json.dumps(ChatContentMainResp) + "\n"
+        final_response = ChatContent(
+            cid=str(uuid.uuid4()),
+            conversation_id=1,
+            user_role_id=1,
+            role="assistant",
+            content=accumulated_content,
+            is_partial=True,
+            is_complete=False,
+            chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT
+        )
+        chat.chat.set_message(final_response)
+        yield final_response.model_dump_json() + "\n"
 
     except Exception as e:
-        yield json.dumps({
-            "response": f"错误: {str(e)}",
-            "is_partial": False
-        }) + "\n"
+        print(f"错误: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
