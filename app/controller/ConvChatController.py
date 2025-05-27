@@ -5,7 +5,7 @@ import uuid
 
 from core.service.ConvChatService import ConversationService, ChatContentService
 from core.entity.Conversation import Conversation, ChatContentMain, ChatMessageType
-from core.entity.ResponseEntity import ResponseModel
+from core.entity.ResponseEntity import ResponseModel, success
 
 conv_chat_router = APIRouter(prefix="/api/chat", tags=["对话管理"])
 
@@ -91,7 +91,7 @@ async def create_conversation(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"创建会话失败: {str(e)}")
 
-@conv_chat_router.get("/conversations/character/{character_id}", response_model=List[ConversationResponse])
+@conv_chat_router.get("/conversations/character/{character_id}", response_model=ResponseModel)
 async def get_conversations_by_character(
     character_id: int,
     conversation_service: ConversationService = Depends(get_conversation_service)
@@ -103,7 +103,7 @@ async def get_conversations_by_character(
             raise HTTPException(status_code=500, detail=response.message)
         
         conversations = response.data
-        return [
+        return success([
             ConversationResponse(
                 conversation_id=conv.conversation_id,
                 character_id=conv.character_id,
@@ -111,7 +111,7 @@ async def get_conversations_by_character(
                 create_time=conv.create_time
             )
             for conv in conversations
-        ]
+        ], message="根据角色获取会话成功")
     except HTTPException:
         raise
     except Exception as e:
@@ -173,7 +173,7 @@ async def create_chat_content(
         raise HTTPException(status_code=500, detail=f"创建对话失败: {str(e)}")
 
 
-@conv_chat_router.get("/conversations/{conversation_id}/chats", response_model=List[ChatContentResponse])
+@conv_chat_router.get("/conversations/{conversation_id}/chats", response_model=ResponseModel)
 async def get_chats_by_conversation(
     conversation_id: int,
     chat_content_service: ChatContentService = Depends(get_chat_content_service),
@@ -194,7 +194,7 @@ async def get_chats_by_conversation(
             raise HTTPException(status_code=500, detail=chat_response.message)
         
         chat_contents = chat_response.data
-        return [
+        return success([
             ChatContentResponse(
                 cid=chat.cid,
                 conversation_id=chat.conversation_id,
@@ -206,7 +206,7 @@ async def get_chats_by_conversation(
                 create_time=chat.create_time
             )
             for chat in chat_contents
-        ]
+        ], message="获取对话成功")
     except HTTPException:
         raise
     except Exception as e:
@@ -219,7 +219,7 @@ async def get_conversations_with_chats_by_character(
     conversation_service: ConversationService = Depends(get_conversation_service),
     chat_content_service: ChatContentService = Depends(get_chat_content_service)
 ):
-    """根据会话的character_id读取对应角色的对话，并根据会话的id分为不同的会话返回"""
+    """根据会话的character_id读取对应角色的对话，并根据会话的id分为不同的会话返回，相当于之前两个api的组合"""
     try:
         # 获取该角色的所有会话
         conversations_response = conversation_service.get_by_character_id(character_id)

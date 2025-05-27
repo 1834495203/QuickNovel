@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { useRouter, useRoute } from 'vue-router'
-import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { computed, ref } from 'vue'
+import Sidebar from './components/Sidebar.vue'
 
-const router = useRouter()
+
 const route = useRoute()
-
-// 导航按钮点击事件
-function goTo(path: string) {
-  router.push(path)
-}
+const sidebarOpen = ref(false)
+const customMenuItems = ref([
+  { id: 1, text: '首页', href: '/', icon: '🏠' },
+  { id: 2, text: '角色信息', href: '/characters', icon: '👤' },
+  { id: 3, text: '创建角色', href: '/character/create', icon: '➕' },
+  { id: 4, text: '聊天', href: '/chatting', icon: '💬' }
+])
 
 // 计算面包屑路径
 const breadcrumbs = computed(() => {
@@ -28,17 +31,11 @@ const breadcrumbs = computed(() => {
 </script>
 
 <template>
-  <div id="app">
-    <!-- 顶层导航栏 -->
-    <header class="top-nav">
-      <div class="nav-buttons">
-        <button @click="goTo('/')" :class="{ active: route.path === '/' }">首页</button>
-        <button @click="goTo('/characters')" :class="{ active: route.path === '/characters' }">角色信息</button>
-        <button @click="goTo('/character/create')" :class="{ active: route.path === '/character/create' }">创建角色</button>
-        <button @click="goTo('/chatting')" :class="{ active: route.path === '/chatting' }">聊天</button>
-      </div>
-    </header>
+    <Sidebar 
+      v-model="sidebarOpen"
+      :menu-items="customMenuItems"></Sidebar>
 
+  <div id="app">
     <!-- 面包屑导航 -->
     <nav class="breadcrumbs">
       <span v-for="(crumb, index) in breadcrumbs" :key="crumb.path">
@@ -65,7 +62,6 @@ const breadcrumbs = computed(() => {
 #app {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
 }
 
 .top-nav {

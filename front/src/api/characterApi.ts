@@ -20,9 +20,9 @@ export const getAllCharacters = async (): Promise<CharacterCard[]> => {
   }); // 返回实际的数据数组
 };
 
-export const getCharacterById = async (characterId: number): Promise<CharacterCard> => {
-  const responseData = await apiClient.get<CharacterCard>(`${CHARACTER_API_BASE_PATH}/${characterId}`);
-  return responseData.data;
+export const getCharacterById = async (characterId: number | string): Promise<CharacterCard> => {
+  const responseData = await apiClient.get<ResponseModel>(`${CHARACTER_API_BASE_PATH}/${characterId}`);
+  return responseData.data.data;
 };
 
 export const createCharacter = async (character: CharacterCard): Promise<CharacterCard> => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 
 const props = defineProps<{
   type: 'success' | 'error' | 'warning' | 'info'
@@ -7,11 +7,25 @@ const props = defineProps<{
   duration: number
 }>()
 
+const emit = defineEmits<{
+  close: []
+  heightChange: [height: number]
+}>()
+
 const visible = ref(false)
+const notifyRef = ref<HTMLElement>()
 
 // 动画控制
-onMounted(() => {
+onMounted(async () => {
   visible.value = true
+  
+  // 等待DOM更新后获取实际高度
+  await nextTick()
+  if (notifyRef.value) {
+    const height = notifyRef.value.offsetHeight
+    emit('heightChange', height)
+  }
+  
   // 自动关闭
   setTimeout(() => {
     visible.value = false
@@ -19,7 +33,6 @@ onMounted(() => {
 })
 
 // 通知关闭后销毁组件
-const emit = defineEmits(['close'])
 watch(visible, (newVal) => {
   if (!newVal) {
     // 等待动画完成后再销毁
@@ -32,7 +45,12 @@ watch(visible, (newVal) => {
 
 <template>
   <transition name="fade">
-    <div v-if="visible" class="notify" :class="[type]">
+    <div 
+      v-if="visible" 
+      ref="notifyRef"
+      class="notify" 
+      :class="[type]"
+    >
       <span class="icon">
         <svg v-if="type === 'success'" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
           <path d="M9 16.2l-3.5-3.5 1.4-1.4L9 13.4l8.1-8.1 1.4 1.4L9 16.2z"/>
@@ -54,18 +72,16 @@ watch(visible, (newVal) => {
 
 <style scoped>
 .notify {
-  position: fixed;
-  top: 20px;
-  right: 20px;
   display: flex;
   align-items: center;
   padding: 12px 20px;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 2000;
   max-width: 400px;
   font-size: 14px;
   color: #fff;
+  min-height: 30px; /* 确保最小高度一致 */
+  word-wrap: break-word;
 }
 
 .success {
@@ -89,6 +105,7 @@ watch(visible, (newVal) => {
   margin-right: 10px;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .icon svg {
@@ -110,21 +127,19 @@ watch(visible, (newVal) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-  transform: translateY(-20px);
+  transform: translateX(100%);
 }
 
 @media (max-width: 768px) {
   .notify {
-    top: 10px;
-    right: 10px;
-    max-width: calc(100% - 20px);
+    max-width: calc(100vw - 40px);
     font-size: 13px;
     padding: 10px 15px;
+    min-height: 40px;
   }
 
   .icon svg {
     width: 18px;
     height: 18px;
   }
-}
-</style>
+}</style>

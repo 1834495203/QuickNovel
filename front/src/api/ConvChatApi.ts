@@ -2,47 +2,15 @@ import type { AxiosResponse } from 'axios';
 import apiClient from '../axios/axios';
 import type { ResponseModel } from '../entity/ResponseEntity';
 import { showNotifyResp } from '../utils/notify';
+import type {
+  CreateConversationRequest,
+  CreateChatContentRequest,
+  ConversationResponse,
+  ChatContentResponse,
+  ConversationWithChatsResponse
+} from '../entity/ConvChatEntity';
 
 const CONV_CHAT_API_BASE_PATH = '/api/chat';
-
-// 请求类型定义
-export interface CreateConversationRequest {
-  character_id: number;
-  root_conversation_id?: number;
-}
-
-export interface CreateChatContentRequest {
-  conversation_id: number;
-  role: string;
-  user_role_id: number;
-  content: string;
-  reasoning_content?: string;
-  chat_type?: number; // ChatMessageType enum value
-}
-
-// 响应类型定义
-export interface ConversationResponse {
-  conversation_id: number;
-  character_id: number;
-  root_conversation_id: number;
-  create_time: number;
-}
-
-export interface ChatContentResponse {
-  cid: string;
-  conversation_id: number;
-  user_role_id: number;
-  role: string;
-  content: string;
-  reasoning_content?: string;
-  chat_type: number;
-  create_time: number;
-}
-
-export interface ConversationWithChatsResponse {
-  conversation: ConversationResponse;
-  chats: ChatContentResponse[];
-}
 
 // 会话相关 API
 export const createConversation = async (request: CreateConversationRequest): Promise<ConversationResponse> => {
@@ -50,9 +18,11 @@ export const createConversation = async (request: CreateConversationRequest): Pr
   return responseData.data;
 };
 
-export const getConversationsByCharacter = async (characterId: number): Promise<ConversationResponse[]> => {
-  const responseData = await apiClient.get<AxiosResponse<ConversationResponse[]>>(`${CONV_CHAT_API_BASE_PATH}/conversations/character/${characterId}`);
-  return responseData.data.data;
+// 根据角色id获取对应的全部会话
+export const getConversationsByCharacter = async (characterId: string): Promise<ConversationResponse[]> => {
+  const responseData = await apiClient.get<ResponseModel<ConversationResponse[]>>(`${CONV_CHAT_API_BASE_PATH}/conversations/character/${characterId}`);
+  showNotifyResp(responseData.data);
+  return responseData.data.data ?? [];
 };
 
 // 聊天内容相关 API
@@ -61,7 +31,7 @@ export const createChatContent = async (conversationId: number, request: CreateC
   return responseData.data;
 };
 
-export const getChatsByConversation = async (conversationId: number): Promise<ChatContentResponse[]> => {
+export const getChatsByConversation = async (conversationId: number | string): Promise<ChatContentResponse[]> => {
   const responseData = await apiClient.get<AxiosResponse<ChatContentResponse[]>>(`${CONV_CHAT_API_BASE_PATH}/conversations/${conversationId}/chats`);
   return responseData.data.data;
 };

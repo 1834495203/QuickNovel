@@ -26,6 +26,7 @@
       <div v-if="isEditing && editableCharacter" style="flex-grow: 1;">
         <input type="text" v-model="editableCharacter.name" placeholder="角色名称" class="form-input" />
       </div>
+      <button v-if="!isEditing" @click.stop="startChat" class="chat-button">聊天</button>
       <button v-if="!isEditing" @click.stop="startEdit" class="edit-button">编辑</button>
       <button @click.stop="toggleExpand" class="expand-toggle-button" v-if="!isEditing">
         {{ isExpanded ? '收起' : '展开' }}
@@ -141,6 +142,7 @@
 
 <script setup lang="ts">
 import { ref, watch, defineProps, defineEmits, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import type { CharacterCard } from '../entity/CharacterEntity.ts';
 import { updateCharacterById } from '../api/characterApi';
 import { deleteCharacterById } from '../api/characterApi';
@@ -154,6 +156,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'character-updated'): void
 }>();
+
+const router = useRouter();
 
 const isExpanded = ref(false);
 const isEditing = ref(false);
@@ -359,6 +363,12 @@ const removeCustomField = (index: number) => {
   }
 };
 
+const startChat = () => {
+  if (props.character.id !== undefined) {
+    router.push(`/chatting?character_id=${props.character.id}`);
+  }
+};
+
 watch(() => props.character, (newCharacter, oldCharacter) => {
   if (!isEditing.value) {
     editableCharacter.value = null;
@@ -441,6 +451,18 @@ watch(() => props.character, (newCharacter, oldCharacter) => {
   white-space: nowrap;
 }
 
+.chat-button {
+  background: none;
+  border: 1px solid #17a2b8;
+  color: #17a2b8;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
 .edit-button {
   background: none;
   border: 1px solid #28a745;
@@ -449,7 +471,7 @@ watch(() => props.character, (newCharacter, oldCharacter) => {
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.8em;
-  margin-left: auto;
+  margin-left: 8px;
   white-space: nowrap;
 }
 
@@ -682,4 +704,3 @@ watch(() => props.character, (newCharacter, oldCharacter) => {
   }
 }
 </style>
-``` 

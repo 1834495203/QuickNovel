@@ -43,7 +43,7 @@ class ChatContentMain(BaseModel):
     create_time: Optional[float] = None              # 时间
 
 
-# 返回给前端的额外参数
+# 返回和接收前端的额外参数
 class ChatContentMainResp(ChatContentMain):
         is_complete: bool
         is_partial: bool
