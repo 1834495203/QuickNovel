@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 import yaml
 from google import genai
 
+from core.entity.Conversation import ChatContentBase, ChatContentMain
 from core.entity.Models import ChatContent, ChatMessageType
 from core.providers.ProvidersBase import AbstractChat
 
@@ -48,11 +49,13 @@ class GeminiChat(AbstractChat):
             )
         )
 
-    def prepare_messages(self, user_input: str, system_prompt: Optional[str] = None):
+    def prepare_messages(self, user_input: ChatContentBase | ChatContent | ChatContentMain = None,
+                         system_prompt: Optional[str] = None,
+                         is_append_user_msg: bool = True,):
         messages = []
         for msg in self.chat.messages:
             messages.append(msg)
-        messages.append(user_input)
+        messages.append(user_input.content)
         return messages
 
     def parse_chunk(self, chunk: Any) -> Dict[str, Any]:

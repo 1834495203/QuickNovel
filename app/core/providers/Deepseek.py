@@ -9,13 +9,13 @@ from core.providers.Openai import OpenAIChat
 
 
 class DeepSeekChat(OpenAIChat):
-    def __init__(self, model: str, api_key: Optional[str] = None):
+    def __init__(self, model: str, api_key: Optional[str] = None, conversation_id=-1):
         if api_key is None:
             BASE_DIR = os.path.dirname(__file__)  # 获取 当前文件 所在目录
             with open(f"{BASE_DIR}\config\\api.yml") as f:
                 config = yaml.load(f, Loader=yaml.FullLoader)
                 api_key = config['resource']['deepseek']['api']
-        super().__init__(api_key, model)
+        super().__init__(api_key, model, conversation_id=conversation_id)
         if model not in ["deepseek-reasoner", "deepseek-chat"]:
             raise ValueError("模型必须是 'deepseek-reasoner' 或 'deepseek-chat'")
 

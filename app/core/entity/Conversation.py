@@ -1,7 +1,9 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, Any
 
 from pydantic import BaseModel
+
+from core.entity.CharacterCard import CharacterCard
 
 
 class ChatMessageType(Enum):
@@ -48,7 +50,46 @@ class ChatContentMain(ChatContentBase):
     create_time: Optional[float] = None              # 时间
 
 
+# 使用于llm的对话信息
+class ChatContent(ChatContentBase):
+    finish_reason: Optional[str] = None     # 完成原因
+    message: Optional[Any] = None           # 消息对象
+
+
 # 返回和接收前端的额外参数
 class ChatContentMainResp(ChatContentMain):
     is_complete: bool
     is_partial: bool
+    character: Optional[CharacterCard] = None
+
+# ---
+
+# 请求模型
+class CreateConversationRequest(BaseModel):
+    character_id: int
+    root_conversation_id: Optional[int] = -1
+
+class CreateChatContentRequest(BaseModel):
+    conversation_id: int
+    role: str
+    user_role_id: int
+    content: str
+    reasoning_content: Optional[str] = None
+    chat_type: ChatMessageType = ChatMessageType.NORMAL_MESSAGE_USER
+
+# 响应模型
+class ConversationResponse(BaseModel):
+    conversation_id: int
+    character_id: int
+    root_conversation_id: int
+    create_time: float
+
+class ChatContentResponse(BaseModel):
+    cid: str
+    conversation_id: int
+    user_role_id: int
+    role: str
+    content: str
+    reasoning_content: Optional[str]
+    chat_type: ChatMessageType
+    create_time: float

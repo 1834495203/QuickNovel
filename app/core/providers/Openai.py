@@ -7,8 +7,8 @@ from core.providers.ProvidersBase import AbstractChat
 
 
 class OpenAIChat(AbstractChat):
-    def __init__(self, api_key: str, model: str):
-        super().__init__(model)
+    def __init__(self, api_key: str, model: str, conversation_id: int = -1):
+        super().__init__(model, conversation_id)
         self.client = self._create_client(api_key)
         self.tools = None
 

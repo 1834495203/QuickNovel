@@ -1,4 +1,3 @@
-# 关系（每次新聊天时填写或选择）
 from typing import Optional
 
 from pydantic import BaseModel

@@ -6,8 +6,9 @@ from typing import List, Optional
 
 from fastapi import UploadFile
 
-from core.entity.CharacterCard import CharacterCard
-from core.entity.ResponseEntity import ResponseModel, success, error
+from core.entity.CharacterCard import CharacterCard, Personality, Trait, Background, Behaviors, Speaking, \
+    CustomizeFields, Distinctive
+from core.entity.ResponseEntity import ResponseModel, success, error, ResponseCode
 import os
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -86,6 +87,11 @@ def add_character(card: CharacterCard) -> ResponseModel:
             card.avatar = upload_result.data
 
         # 添加角色到列表
+        get_id_resp = get_id()
+        if get_id_resp.code == ResponseCode.SUCCESS:
+            card.id = get_id_resp.data
+        else:
+            return error(message="存储失败，获取id有误")
         characters.append(card)
         save_result = save_all_characters(characters)
         if save_result.code != 200:
@@ -193,3 +199,7 @@ def delete_character(character_id: int) -> ResponseModel:
         return success(message="角色删除成功")
     except Exception as e:
         return error(message=f"删除角色失败: {str(e)}")
+
+
+if __name__ == "__main__":
+    pass

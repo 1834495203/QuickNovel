@@ -1,40 +1,56 @@
 # 定义聊天内容类
 from typing import Optional, List, Any
 
-from core.entity.Conversation import ChatMessageType, ChatContentBase
+from core.entity.Conversation import ChatMessageType, ChatContentBase, ChatContentMain, ChatContentMainResp, ChatContent
+from core.service.ConvChatService import ChatContentService
 
 
-# 使用于llm的对话信息
-class ChatContent(ChatContentBase):
-    # 新增字段：OpenAI 接口返回的字段
-    tool_calls: Optional[List[Any]] = None  # 工具调用列表
-    name: Optional[str] = None              # 消息名称
-    tool_call_id: Optional[str] = None      # 工具调用ID
-    finish_reason: Optional[str] = None     # 完成原因
-    message: Optional[Any] = None           # 消息对象
+def get_chat_content_service():
+    return ChatContentService()
 
-    # 新增字段：Token 相关参数
-    prompt_tokens: Optional[int] = None     # 提示token数量
-    completion_tokens: Optional[int] = None # 完成token数量
-    total_tokens: Optional[int] = None      # 总token数量
-
-    # 新增字段：合并次数
-    merge_count: int = 0                    # 对话被合并的次数
-
-    class Config:
-        arbitrary_types_allowed = True      # 允许 Any 类型
-
-# 原始的 Chat 类
+# 原始的 Chat 类，应该维护的是单次对话的上下文
 class Chat:
     def __init__(self,
-                 messages: Optional[List[ChatContent]] = None,):
+                 messages: Optional[List[ChatContent]] = None,
+                 conversation_id: int = None,
+                 chat_content_service: ChatContentService = get_chat_content_service()):
         self.messages: List[ChatContent] = messages or []
+        self.chat_content_service: ChatContentService = chat_content_service
+        self.conversation_id = conversation_id
 
-    def set_message(self, messages: ChatContent):
-        self.messages.append(messages)
+        if self.conversation_id is not None:
+            self.chat_content_service.set_conversation_id(self.conversation_id)
+
+    def set_message(self, message: ChatContentBase | ChatContent | ChatContentMain):
+        if message.conversation_id is None:
+            # 无角色对话
+            self.messages.append(ChatContent(**message.model_dump(exclude={'cid', 'conversation_id', 'user_role_id', 'create_time', "character"})))
+            return self
+
+        if isinstance(message, (ChatContentMain, ChatContentMainResp)):
+            # 如果是 ChatContentMain或ChatContentMainResp，保存到数据库
+            if self.conversation_id != message.conversation_id:
+                raise ValueError("会话不一致")
+            self.chat_content_service.create(message)
+
+        elif isinstance(message, (ChatContentBase, ChatContent)):
+            # 如果是 ChatContentBase 或 ChatContent，直接转换并存储，没有conversation_id，表示无角色对话
+            chat_content = ChatContent(**message.model_dump())
+            self.messages.append(chat_content)
+        else:
+            raise ValueError("不支持的消息类型")
         return self
 
-    def set_messages(self, messages: List[ChatContent]):
+    def get_messages(self):
+        msg_in_jsonl = self.chat_content_service.get_by_conversation_id(self.conversation_id).data
+        if len(msg_in_jsonl) != 0:
+            for msg in msg_in_jsonl:
+                self.messages.append(ChatContent(**msg.model_dump(exclude={'cid', 'conversation_id', 'user_role_id', 'create_time', "character"})))
+        if len(self.messages) == 0:
+            raise ValueError("没有对话内容")
+        return self.messages
+
+    def set_messages(self, messages: List[ChatContentBase | ChatContent | ChatContentMain]):
         for msg_ in messages:
             self.set_message(msg_)
         return self

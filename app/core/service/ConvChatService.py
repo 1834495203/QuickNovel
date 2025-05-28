@@ -11,8 +11,13 @@ from core.entity.ResponseEntity import ResponseModel, success, error
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 # 存储会话
 CONVERSATION_DB_PATH = f'{CURRENT_DIR}/db/conversations.jsonl'
-# 存储对话
-CHAT_CONTENT_DB_PATH = f'{CURRENT_DIR}/db/chat_contents.jsonl'
+# 存储对话的基础目录
+CHAT_CONTENT_BASE_DIR = f'{CURRENT_DIR}/db/chats'
+
+
+def get_chat_file_path(conversation_id: int) -> str:
+    """根据会话ID获取对话文件路径"""
+    return f'{CHAT_CONTENT_BASE_DIR}/chat_{conversation_id}.jsonl'
 
 
 class ConversationService:
@@ -20,6 +25,8 @@ class ConversationService:
 
     def __init__(self, db_path: str = CONVERSATION_DB_PATH):
         self.storage = JSONLStorage(db_path)
+        # 确保聊天内容目录存在
+        os.makedirs(CHAT_CONTENT_BASE_DIR, exist_ok=True)
 
     def create(self, conversation: Conversation) -> ResponseModel[Conversation]:
         """创建会话"""
@@ -35,6 +42,14 @@ class ConversationService:
 
             # 添加到文件
             self.storage.append(conversation)
+            
+            # 创建对应的对话文件
+            chat_file_path = get_chat_file_path(conversation.conversation_id)
+            chat_storage = JSONLStorage(chat_file_path)
+            # 初始化空的对话文件（确保文件存在）
+            if not os.path.exists(chat_file_path):
+                chat_storage.write_all([])
+            
             return success(conversation, "会话创建成功")
         except Exception as e:
             return error(500, f"创建会话失败: {str(e)}")
@@ -110,6 +125,12 @@ class ConversationService:
 
             if len(data) < original_len:
                 self.storage.write_all(data)
+                
+                # 删除对应的对话文件
+                chat_file_path = get_chat_file_path(conversation_id)
+                if os.path.exists(chat_file_path):
+                    os.remove(chat_file_path)
+                
                 return success(True, "会话删除成功")
             return success(False, "未找到指定会话")
         except Exception as e:
@@ -129,8 +150,28 @@ class ConversationService:
 class ChatContentService:
     """聊天内容CRUD操作类"""
 
-    def __init__(self, db_path: str = CHAT_CONTENT_DB_PATH):
-        self.storage = JSONLStorage(db_path)
+    def __init__(self, conversation_id: Optional[int] = None, db_path: Optional[str] = None):
+        """
+        初始化聊天内容服务
+        :param conversation_id: 会话ID，用于确定对话文件路径
+        :param db_path: 直接指定数据库路径（优先级高于conversation_id）
+        """
+        if db_path:
+            self.storage = JSONLStorage(db_path)
+        elif conversation_id is not None:
+            chat_file_path = get_chat_file_path(conversation_id)
+            self.storage = JSONLStorage(chat_file_path)
+        else:
+            # 兼容旧的使用方式，使用默认路径
+            self.storage = JSONLStorage(f'{CHAT_CONTENT_BASE_DIR}/default_chat.jsonl')
+
+    def set_conversation_id(self, conversation_id: int):
+        self.storage = JSONLStorage(get_chat_file_path(conversation_id))
+
+    @staticmethod
+    def get_service_for_conversation(conversation_id: int) -> 'ChatContentService':
+        """为指定会话创建聊天内容服务实例"""
+        return ChatContentService(conversation_id=conversation_id)
 
     def create(self, chat_content: ChatContentMain) -> ResponseModel[ChatContentMain]:
         """创建聊天内容"""
@@ -179,14 +220,15 @@ class ChatContentService:
     def get_by_conversation_id(self, conversation_id: int) -> ResponseModel[List[ChatContentMain]]:
         """根据会话ID获取聊天内容"""
         try:
-            data = self.storage.read_all()
+            # 如果当前服务实例不是为指定会话创建的，则创建新的服务实例
+            target_service = self.get_service_for_conversation(conversation_id)
+            data = target_service.storage.read_all()
             result = []
             for item in data:
-                if item.get('conversation_id') == conversation_id:
-                    # 处理enum反序列化
-                    if 'chat_type' in item and isinstance(item['chat_type'], int):
-                        item['chat_type'] = ChatMessageType(item['chat_type'])
-                    result.append(ChatContentMain(**item))
+                # 处理enum反序列化
+                if 'chat_type' in item and isinstance(item['chat_type'], int):
+                    item['chat_type'] = ChatMessageType(item['chat_type'])
+                result.append(ChatContentMain(**item))
             return success(result, "根据会话ID获取聊天内容成功")
         except Exception as e:
             return error(500, f"根据会话ID获取聊天内容失败: {str(e)}")
@@ -263,13 +305,19 @@ class ChatContentService:
     def delete_by_conversation_id(self, conversation_id: int) -> ResponseModel[int]:
         """根据会话ID删除所有相关聊天内容"""
         try:
-            data = self.storage.read_all()
-            original_len = len(data)
-            data = [item for item in data if item.get('conversation_id') != conversation_id]
-
-            deleted_count = original_len - len(data)
-            if deleted_count > 0:
-                self.storage.write_all(data)
+            # 直接删除对应的对话文件
+            chat_file_path = get_chat_file_path(conversation_id)
+            deleted_count = 0
+            
+            if os.path.exists(chat_file_path):
+                # 先读取文件获取删除的条数
+                target_service = self.get_service_for_conversation(conversation_id)
+                data = target_service.storage.read_all()
+                deleted_count = len(data)
+                
+                # 清空文件内容
+                target_service.storage.write_all([])
+            
             return success(deleted_count, f"成功删除 {deleted_count} 条聊天内容")
         except Exception as e:
             return error(500, f"根据会话ID删除聊天内容失败: {str(e)}")
@@ -298,7 +346,6 @@ def example_usage():
     """使用示例"""
     # 初始化CRUD对象
     conversation_crud = ConversationService()
-    chat_content_crud = ChatContentService()
 
     # 创建会话
     conversation = Conversation(
@@ -312,6 +359,9 @@ def example_usage():
     else:
         print(f"Error: {created_response.message}")
 
+    # 为特定会话创建聊天内容服务
+    chat_content_crud = ChatContentService.get_service_for_conversation(1)
+    
     # 创建聊天内容
     chat_content = ChatContentMain(
         cid=str(uuid.uuid4()),

@@ -6,15 +6,14 @@ import type {
   CreateConversationRequest,
   CreateChatContentRequest,
   ConversationResponse,
-  ChatContentResponse,
-  ConversationWithChatsResponse
+  ChatContentResponse
 } from '../entity/ConvChatEntity';
 
 const CONV_CHAT_API_BASE_PATH = '/api/chat';
 
-// 会话相关 API
-export const createConversation = async (request: CreateConversationRequest): Promise<ConversationResponse> => {
-  const responseData = await apiClient.post<ConversationResponse>(`${CONV_CHAT_API_BASE_PATH}/conversations`, request);
+// 创建会话
+export const createConversation = async (request: CreateConversationRequest): Promise<ResponseModel<ConversationResponse>> => {
+  const responseData = await apiClient.post<ResponseModel>(`${CONV_CHAT_API_BASE_PATH}/conversations`, request);
   return responseData.data;
 };
 
@@ -31,14 +30,9 @@ export const createChatContent = async (conversationId: number, request: CreateC
   return responseData.data;
 };
 
+// 获取会话的聊天内容
 export const getChatsByConversation = async (conversationId: number | string): Promise<ChatContentResponse[]> => {
   const responseData = await apiClient.get<AxiosResponse<ChatContentResponse[]>>(`${CONV_CHAT_API_BASE_PATH}/conversations/${conversationId}/chats`);
-  return responseData.data.data;
-};
-
-// 综合查询 API
-export const getConversationsWithChatsByCharacter = async (characterId: number): Promise<ConversationWithChatsResponse[]> => {
-  const responseData = await apiClient.get<AxiosResponse<ConversationWithChatsResponse[]>>(`${CONV_CHAT_API_BASE_PATH}/characters/${characterId}/conversations-with-chats`);
   return responseData.data.data;
 };
 
@@ -46,10 +40,11 @@ export const getConversationsWithChatsByCharacter = async (characterId: number):
 export const createConversationWithNotify = async (request: CreateConversationRequest): Promise<ConversationResponse | null> => {
   try {
     const result = await createConversation(request);
-    showNotifyResp({ code: 200, message: '会话创建成功', data: result } as ResponseModel);
-    return result;
+    console.log('创建会话结果:', result);
+    showNotifyResp(result);
+    return result.data ?? null;
   } catch (error) {
-    console.error('创建会话失败:', error);
+    showNotifyResp({ code: 500, message: '创建会话失败', data: null } as ResponseModel);
     return null;
   }
 };
