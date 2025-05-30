@@ -1,15 +1,14 @@
 import asyncio
 import uuid
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 import random
 
-from core.entity.CharacterCard import CharacterCard
 from core.entity.Conversation import ChatContentMain, ChatContentMainResp
 from core.entity.Models import ChatMessageType
-from core.providers.Deepseek import DeepSeekChat
+from core.service.ProvidersService import stream_llm_response
 
 providers_router = APIRouter(prefix="/api/providers", tags=["providers"])
 
@@ -119,57 +118,3 @@ async def stream_llm_response_test(input_data: ChatContentMain) -> AsyncGenerato
 async def call_llm(message: ChatContentMainResp):
     return StreamingResponse(stream_llm_response(ChatContentMain(**message.model_dump(exclude={"character"})),
                                                  message.character), media_type="text/event-stream")
-
-
-# 抽取的流式响应生成器函数
-async def stream_llm_response(input_data: ChatContentMain,
-                              character: Optional[CharacterCard] = None) -> AsyncGenerator[str, None]:
-    chat = DeepSeekChat(model="deepseek-chat", conversation_id=input_data.conversation_id)
-    # 准备消息
-    sys_prompt = None
-    if character:
-        sys_prompt = f"在对话中请严格扮演以下角色进行对话: \n {character}"
-    api_messages = chat.prepare_messages(input_data, system_prompt=sys_prompt)
-
-    print(api_messages)
-
-    # 调用流式 API
-    response = chat.call_api(api_messages, stream=True)
-    accumulated_content = ""
-    for chunk in response:
-        chunk_data = chat.parse_chunk(chunk)
-        content = chunk_data.get("content")
-        if content:  # 仅发送非空内容
-            # 模拟偶尔的停顿
-            if random.random() > 0.8:
-                await asyncio.sleep(random.uniform(0.05, 0.2))
-
-            accumulated_content += content
-            # 使用 .json() 方法直接生成 JSON 字符串
-            response_obj = ChatContentMainResp(
-                cid=str(uuid.uuid4()),
-                conversation_id=input_data.conversation_id,
-                user_role_id=input_data.user_role_id,
-                role="assistant",
-                content=content,
-                is_partial=False,
-                is_complete=True,
-                chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT_PART
-            )
-            yield response_obj.model_dump_json() + "\n"
-
-    # 发送最终完整响应
-    final_response = ChatContentMainResp(
-        cid=str(uuid.uuid4()),
-        conversation_id=input_data.conversation_id,
-        user_role_id=input_data.user_role_id,
-        role="assistant",
-        content=accumulated_content,
-        is_partial=True,
-        is_complete=False,
-        chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT
-    )
-
-    chat.chat.set_message(final_response)
-    yield final_response.model_dump_json() + "\n"
-

@@ -21,25 +21,11 @@ class Chat:
         if self.conversation_id is not None:
             self.chat_content_service.set_conversation_id(self.conversation_id)
 
-    def set_message(self, message: ChatContentBase | ChatContent | ChatContentMain):
-        if message.conversation_id is None:
-            # 无角色对话
-            self.messages.append(ChatContent(**message.model_dump(exclude={'cid', 'conversation_id', 'user_role_id', 'create_time', "character"})))
-            return self
-
-        if isinstance(message, (ChatContentMain, ChatContentMainResp)):
-            # 如果是 ChatContentMain或ChatContentMainResp，保存到数据库
-            if self.conversation_id != message.conversation_id:
-                raise ValueError("会话不一致")
-            self.chat_content_service.create(message)
-
-        elif isinstance(message, (ChatContentBase, ChatContent)):
-            # 如果是 ChatContentBase 或 ChatContent，直接转换并存储，没有conversation_id，表示无角色对话
-            chat_content = ChatContent(**message.model_dump())
-            self.messages.append(chat_content)
+    def set_message(self, message: ChatContentBase | ChatContent | ChatContentMain, is_save=False):
+        if is_save:
+            self.chat_content_service.create(message.to_chat_content_main())
         else:
-            raise ValueError("不支持的消息类型")
-        return self
+            self.messages.append(message.to_chat_content())
 
     def get_messages(self):
         msg_in_jsonl = self.chat_content_service.get_by_conversation_id(self.conversation_id).data

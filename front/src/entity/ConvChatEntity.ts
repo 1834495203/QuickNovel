@@ -31,8 +31,8 @@ export interface ChatContentResponse {
   content: string;
   reasoning_content?: string;
   chat_type: number;
-  create_time?: Date;
-  timestamp: Date;
+  create_time?: number;
+  timestamp: number;
   character?: CharacterCard;
 }
 
