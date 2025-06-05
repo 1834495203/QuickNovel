@@ -1,7 +1,6 @@
-# 定义聊天内容类
-from typing import Optional, List, Any
+from typing import Optional, List
 
-from core.entity.Conversation import ChatMessageType, ChatContentBase, ChatContentMain, ChatContentMainResp, ChatContent
+from core.entity.Conversation import ChatMessageType, ChatContentBase, ChatContentMain, ChatContent
 from core.service.ConvChatService import ChatContentService
 
 
@@ -12,7 +11,7 @@ def get_chat_content_service():
 class Chat:
     def __init__(self,
                  messages: Optional[List[ChatContent]] = None,
-                 conversation_id: int = None,
+                 conversation_id: Optional[int] = None,
                  chat_content_service: ChatContentService = get_chat_content_service()):
         self.messages: List[ChatContent] = messages or []
         self.chat_content_service: ChatContentService = chat_content_service
@@ -31,15 +30,10 @@ class Chat:
         msg_in_jsonl = self.chat_content_service.get_by_conversation_id(self.conversation_id).data
         if len(msg_in_jsonl) != 0:
             for msg in msg_in_jsonl:
-                self.messages.append(ChatContent(**msg.model_dump(exclude={'cid', 'conversation_id', 'user_role_id', 'create_time', "character"})))
+                self.messages.append(msg.to_chat_content())
         if len(self.messages) == 0:
             raise ValueError("没有对话内容")
         return self.messages
-
-    def set_messages(self, messages: List[ChatContentBase | ChatContent | ChatContentMain]):
-        for msg_ in messages:
-            self.set_message(msg_)
-        return self
 
     def get_messages_by_type(self, message_type: ChatMessageType) -> List[ChatContent]:
         """

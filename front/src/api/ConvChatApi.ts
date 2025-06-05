@@ -30,10 +30,12 @@ export const createChatContent = async (conversationId: number, request: CreateC
   return responseData.data;
 };
 
-// 获取会话的聊天内容
-export const getChatsByConversation = async (conversationId: number | string): Promise<ChatContentResponse[]> => {
-  const responseData = await apiClient.get<AxiosResponse<ChatContentResponse[]>>(`${CONV_CHAT_API_BASE_PATH}/conversations/${conversationId}/chats`);
-  return responseData.data.data;
+// 根据id获取会话的对话内容
+export const getChatsByConversation = async (conversationId: number | string | null): Promise<ChatContentResponse[]> => {
+  // 构建查询参数
+  const params = conversationId != null ? { conversation_id: conversationId } : {};
+  const responseData = await apiClient.get<AxiosResponse<ChatContentResponse[]>>(`${CONV_CHAT_API_BASE_PATH}/conversations`, { params });
+  return responseData.data.data ?? [];
 };
 
 // 辅助函数 - 带通知的创建会话

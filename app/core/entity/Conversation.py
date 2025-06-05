@@ -88,7 +88,7 @@ class ChatContentMainResp(ChatContentMain):
         return ChatContent(**self.model_dump(exclude={"is_complete", "is_partial", "character", "cid", "conversation_id", "user_role_id", "create_time"}))
 
     def to_chat_content_main(self):
-        return ChatContent(**self.model_dump(exclude={"is_complete", "is_partial", "character"}))
+        return ChatContentMain(**self.model_dump(exclude={"is_complete", "is_partial", "character"}))
 
 # ---
 
@@ -119,7 +119,7 @@ class ConversationResponse(BaseModel):
 # 返回对话内容
 class ChatContentResponse(BaseModel):
     cid: str
-    conversation_id: int
+    conversation_id: Optional[int]
     user_role_id: int
     role: str
     content: str

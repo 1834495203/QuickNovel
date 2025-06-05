@@ -116,5 +116,5 @@ async def stream_llm_response_test(input_data: ChatContentMain) -> AsyncGenerato
 # 独立的 LLM API，供外部调用
 @providers_router.post("/llm")
 async def call_llm(message: ChatContentMainResp):
-    return StreamingResponse(stream_llm_response(ChatContentMain(**message.model_dump(exclude={"character"})),
+    return StreamingResponse(stream_llm_response(message,
                                                  message.character), media_type="text/event-stream")

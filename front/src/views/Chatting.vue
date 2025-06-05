@@ -22,7 +22,7 @@
                 <div v-else><span>无角色对话</span></div>
             </template>
 
-            <!-- <template #messages="{ isStreaming }">
+            <template #messages="{ isStreaming, messages }">
                 <div class="messages-list">
                     <div v-for="msg in messages" :key="msg.cid" :class="['message-item', `message-${msg.role}`]">
                         <div class="message-avatar">
@@ -56,7 +56,7 @@
                         </div>
                     </div>
                 </div>
-            </template> -->
+            </template>
         </ChatDialog>
     </div>
 </template>
@@ -92,25 +92,11 @@ onMounted(async () => {
             message: `与角色对话, 当前角色ID: ${character_id}`,
             duration: 3000
         })
-
         // 获取角色信息
         character.value = await getCharacterById(character_id)
 
         // 根据角色获取对应全部会话
-        const convs = await getConversationsByCharacter(character_id)
-        conversations.value = convs
-
-        if (conversations.value.length === 0) {
-            // 如果没有会话，创建一个新的会话
-            await createNewConversation()
-        } else {
-            // 选择最新的会话（假设ID越大越新）
-            const latestConversation = conversations.value.reduce((latest, current) =>
-                current.conversation_id > latest.conversation_id ? current : latest
-            )
-            selectedConversationId.value = latestConversation.conversation_id
-            await loadConversationMessages(selectedConversationId.value)
-        }
+        conversations.value = await getConversationsByCharacter(character_id)
     } else {
         showNotify({
             type: 'info',
@@ -118,6 +104,17 @@ onMounted(async () => {
             duration: 3000
         })
     }
+    if (conversations.value.length === 0) {
+        // 如果没有会话，创建一个新的会话
+        await createNewConversation()
+    } else {
+        // 选择最新的会话（假设ID越大越新）
+        const latestConversation = conversations.value.reduce((latest, current) =>
+            current.conversation_id > latest.conversation_id ? current : latest
+        )
+        selectedConversationId.value = latestConversation.conversation_id
+    }
+    await loadConversationMessages(selectedConversationId.value ?? null)
 })
 
 const getRoleDisplay = (role: string): string => {
@@ -132,14 +129,14 @@ const getRoleDisplay = (role: string): string => {
 function formatTime(timestamp: number): string {
     // 创建 Date 对象，时间戳需要乘以 1000 转换为毫秒
     const date = new Date(timestamp * 1000);
-    
+
     // 获取月、日和时间
     const month = date.getMonth() + 1; // 月份从 0 开始，所以加 1
     const day = date.getDate();
     const hours = date.getHours().toString().padStart(2, '0'); // 补零
     const minutes = date.getMinutes().toString().padStart(2, '0');
     const seconds = date.getSeconds().toString().padStart(2, '0');
-    
+
     // 返回格式化的字符串，例如 "MM-DD HH:mm:ss"
     return `${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
@@ -175,7 +172,7 @@ const switchConversation = async () => {
 }
 
 // 加载指定会话的消息
-const loadConversationMessages = async (conversationId: number) => {
+const loadConversationMessages = async (conversationId: number | string | null) => {
     try {
         // 清空当前消息
         messages.length = 0

@@ -1,22 +1,22 @@
-# 抽取的流式响应生成器函数
 import asyncio
 import random
 import uuid
 from typing import Optional, AsyncGenerator
 
 from core.entity.CharacterCard import CharacterCard
-from core.entity.Conversation import ChatContentMain, ChatContentMainResp, ChatMessageType
+from core.entity.Conversation import ChatContentMainResp, ChatMessageType
 from core.providers.Deepseek import DeepSeekChat
 
 
-async def stream_llm_response(input_data: ChatContentMain,
+# 抽取的流式响应生成器函数
+async def stream_llm_response(input_data: ChatContentMainResp,
                               character: Optional[CharacterCard] = None) -> AsyncGenerator[str, None]:
     chat = DeepSeekChat(model="deepseek-chat", conversation_id=input_data.conversation_id)
     # 准备消息
     sys_prompt = None
     if character:
         sys_prompt = f"在对话中请严格扮演以下角色进行对话: \n {character}"
-    api_messages = chat.prepare_messages(input_data, system_prompt=sys_prompt)
+    api_messages = chat.prepare_messages(input_data.to_chat_content_main(), system_prompt=sys_prompt)
 
     print(api_messages)
 
@@ -57,5 +57,5 @@ async def stream_llm_response(input_data: ChatContentMain,
         chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT
     )
 
-    chat.chat.set_message(final_response)
+    chat.chat.set_message(final_response, is_save=True)
     yield final_response.model_dump_json() + "\n"

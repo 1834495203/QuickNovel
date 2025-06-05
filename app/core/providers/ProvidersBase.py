@@ -7,7 +7,7 @@ from core.entity.Models import ChatContent, ChatMessageType, Chat
 
 # 修改后的 AbstractChat 类
 class AbstractChat(ABC):
-    def __init__(self, model: str, conversation_id:int = -1):
+    def __init__(self, model: str, conversation_id: Optional[int] = None):
         """
         初始化抽象聊天类
         """
@@ -30,7 +30,7 @@ class AbstractChat(ABC):
             ))
 
         if user_input is not None and is_append_user_msg:
-            self.chat.set_message(user_input)
+            self.chat.set_message(user_input, is_save=True)
 
         messages = []
         for msg in self.chat.get_messages():

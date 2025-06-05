@@ -181,7 +181,7 @@ const handleSend = async () => {
             cid: Date.now().toString(),
             role: 'user',
             user_role_id: 1,
-            conversation_id: props.conversationId,
+            conversation_id: props.conversationId ?? null,
             content: message,
             is_complete: true,
             is_partial: false,

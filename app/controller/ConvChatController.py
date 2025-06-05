@@ -1,5 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends, Path
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Depends
 import uuid
+
+from fastapi.params import Query
 
 from core.service.ConvChatService import ConversationService, ChatContentService
 from core.entity.Conversation import Conversation, ChatContentMain, CreateConversationRequest, ConversationResponse, \
@@ -14,8 +18,8 @@ def get_conversation_service():
     return ConversationService()
 
 
-def get_chat_content_service(conversation_id: int = Path(...)):
-    return ChatContentService(conversation_id)
+def get_chat_content_service():
+    return ChatContentService()
 
 
 @conv_chat_router.post("/conversations", response_model=ResponseModel)
@@ -141,28 +145,30 @@ async def create_chat_content(
         raise HTTPException(status_code=500, detail=f"创建对话失败: {str(e)}")
 
 
-@conv_chat_router.get("/conversations/{conversation_id}/chats", response_model=ResponseModel)
+@conv_chat_router.get("/conversations", response_model=ResponseModel)
 async def get_chats_by_conversation(
-    conversation_id: int,
+    conversation_id: Optional[int] = Query(None),
     chat_content_service: ChatContentService = Depends(get_chat_content_service),
     conversation_service: ConversationService = Depends(get_conversation_service)
 ):
     """根据会话的id读取对应全部对话"""
     try:
-        # 验证会话是否存在
-        conversation_response = conversation_service.get_by_id(conversation_id)
-        if conversation_response.code != 200:
-            raise HTTPException(status_code=500, detail=conversation_response.message)
-        
-        if not conversation_response.data:
-            raise HTTPException(status_code=404, detail=f"会话 {conversation_id} 不存在")
-        
+        if conversation_id:
+            # 验证会话是否存在
+            chat_content_service.set_conversation_id(conversation_id)
+            conversation_response = conversation_service.get_by_id(conversation_id)
+            if conversation_response.code != 200:
+                raise HTTPException(status_code=500, detail=conversation_response.message)
+
+            if not conversation_response.data:
+                raise HTTPException(status_code=404, detail=f"会话 {conversation_id} 不存在")
+
         chat_response = chat_content_service.get_by_conversation_id(conversation_id)
         if chat_response.code != 200:
             raise HTTPException(status_code=500, detail=chat_response.message)
         
         chat_contents = chat_response.data
-        return success([
+        data = [
             ChatContentResponse(
                 cid=chat.cid,
                 conversation_id=chat.conversation_id,
@@ -174,7 +180,8 @@ async def get_chats_by_conversation(
                 create_time=chat.create_time
             )
             for chat in chat_contents
-        ], message="获取对话成功")
+        ]
+        return success(data, message="获取对话成功")
     except HTTPException:
         raise
     except Exception as e:

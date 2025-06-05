@@ -9,7 +9,7 @@ from core.providers.Openai import OpenAIChat
 
 
 class DeepSeekChat(OpenAIChat):
-    def __init__(self, model: str, api_key: Optional[str] = None, conversation_id=-1):
+    def __init__(self, model: str, api_key: Optional[str] = None, conversation_id=None):
         if api_key is None:
             BASE_DIR = os.path.dirname(__file__)  # 获取 当前文件 所在目录
             with open(f"{BASE_DIR}\config\\api.yml") as f:
