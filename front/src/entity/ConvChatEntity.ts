@@ -6,39 +6,12 @@ export interface CreateConversationRequest {
   root_conversation_id?: number;
 }
 
-export interface CreateChatContentRequest {
-  conversation_id: number;
-  role: string;
-  user_role_id: number;
-  content: string;
-  reasoning_content?: string;
-  chat_type?: number; // ChatMessageType enum value
-}
-
-// 响应类型定义
-export interface ConversationResponse {
+// 接收会话内容
+export interface Conversation {
   conversation_id: number;
   character_id: number;
   root_conversation_id: number;
   create_time: number;
-}
-
-export interface ChatContentResponse {
-  cid: string;
-  conversation_id?: number;
-  user_role_id?: number;
-  role: string;
-  content: string;
-  reasoning_content?: string;
-  chat_type: number;
-  create_time?: number;
-  timestamp: number;
-  character?: CharacterCard;
-}
-
-export interface ConversationWithChatsResponse {
-  conversation: ConversationResponse;
-  chats: ChatContentResponse[];
 }
 
 // 枚举定义
@@ -56,24 +29,28 @@ export const ChatMessageType = {
 
 export type ChatMessageType = typeof ChatMessageType[keyof typeof ChatMessageType]
 
-// 接口定义
+// 接口定义，前端显示消息实体类
 export interface ChatMessage {
   cid: string
   role: string
   content: string
   chat_type: ChatMessageType
   reasoning_content?: string
-  timestamp: Date
+  create_time: number
   conversation_id?: string
   user_role_id?: number
 }
 
+// 接收对话内容
+export interface ChatContentResponse extends ChatMessage {
+  character?: CharacterCard;
+}
+
+// 处理流式响应
 export interface StreamResponse {
   cid: string
   role: string
   content: string
-  is_complete: boolean
-  is_partial: boolean
   chat_type: ChatMessageType
   reasoning_content?: string
 }

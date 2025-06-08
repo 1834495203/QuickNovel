@@ -77,8 +77,6 @@ async def stream_llm_response_test(input_data: ChatContentMain) -> AsyncGenerato
                     user_role_id=1,
                     role="assistant",
                     content=content,
-                    is_partial=False,
-                    is_complete=True,
                     chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT_PART
                 )
                 yield response_obj.model_dump_json() + "\n"
@@ -93,8 +91,6 @@ async def stream_llm_response_test(input_data: ChatContentMain) -> AsyncGenerato
             user_role_id=1,
             role="assistant",
             content=accumulated_content,
-            is_partial=True,
-            is_complete=False,
             chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT
         )
         yield final_response.model_dump_json() + "\n"
@@ -106,8 +102,6 @@ async def stream_llm_response_test(input_data: ChatContentMain) -> AsyncGenerato
             user_role_id=1,
             role="exception",
             content=str(e),
-            is_partial=True,
-            is_complete=False,
             chat_type=ChatMessageType.EXCLUDE_MESSAGE_EXCEPTION
         )
         yield error_response.model_dump_json() + "\n"

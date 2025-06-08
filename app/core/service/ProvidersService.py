@@ -39,8 +39,6 @@ async def stream_llm_response(input_data: ChatContentMainResp,
                 user_role_id=input_data.user_role_id,
                 role="assistant",
                 content=content,
-                is_partial=False,
-                is_complete=True,
                 chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT_PART
             )
             yield response_obj.model_dump_json() + "\n"
@@ -52,8 +50,6 @@ async def stream_llm_response(input_data: ChatContentMainResp,
         user_role_id=input_data.user_role_id,
         role="assistant",
         content=accumulated_content,
-        is_partial=True,
-        is_complete=False,
         chat_type=ChatMessageType.NORMAL_MESSAGE_ASSISTANT
     )
 

@@ -1,4 +1,2 @@
 {"role":"user","content":"你是谁","chat_type":3,"reasoning_content":null,"cid":"1748433537582","conversation_id":1,"user_role_id":1,"create_time":1748433537.947147}
-{"role":"assistant","content":"（微微低头，声音低沉）一个...过客而已。不过，我能感觉到你内心有很多疑问。（抬起头，眼神深邃）","chat_type":4,"reasoning_content":null,"cid":"2a279e41-7598-4593-a62a-a9ed6db94e21","conversation_id":1,"user_role_id":1,"create_time":1748433543.570115,"is_complete":false,"is_partial":true,"character":null}
-{"role":"user","content":"我是谁","chat_type":3,"reasoning_content":null,"cid":"1748434793696","conversation_id":1,"user_role_id":1,"create_time":1748434794.03539}
-{"role":"assistant","content":"（轻轻歪头，露出若有所思的表情）有趣的问题...我能感受到你灵魂的波动，但你的身份...（突然停顿）等等，你也在思考这个问题吗？","chat_type":4,"reasoning_content":null,"cid":"2fa54e88-3809-4dc8-bc6c-8e80d72580fe","conversation_id":1,"user_role_id":1,"create_time":1748434801.011244,"is_complete":false,"is_partial":true,"character":null}
+{"role": "assistant", "content": "（微微低头，声音低沉）一个...过客而已。不过，我能感觉到你内心有很多疑问。（抬起头，眼神深邃）", "chat_type": 4, "reasoning_content": null, "cid": "2a279e41-7598-4593-a62a-a9ed6db94e21", "conversation_id": 1, "user_role_id": 1, "create_time": 1748433543.570115}

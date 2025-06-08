@@ -61,7 +61,7 @@ class ConversationService:
             for item in data:
                 if item.get('conversation_id') == conversation_id:
                     return success(Conversation(**item), "获取会话成功")
-            return success(None, "未找到指定会话")
+            return error(404, "未找到指定会话")
         except Exception as e:
             return error(500, f"获取会话失败: {str(e)}")
 
@@ -112,7 +112,7 @@ class ConversationService:
                     # 写回文件
                     self.storage.write_all(data)
                     return success(updated_conversation, "会话更新成功")
-            return success(None, "未找到指定会话")
+            return error(message="未找到指定会话")
         except Exception as e:
             return error(500, f"更新会话失败: {str(e)}")
 
@@ -262,14 +262,14 @@ class ChatContentService:
         except Exception as e:
             return error(500, f"根据聊天类型获取聊天内容失败: {str(e)}")
 
-    def update(self, cid: str, updates: Dict[str, Any]) -> ResponseModel[Optional[ChatContentMain]]:
+    def update(self, cid: str, updates: ChatContentMain) -> ResponseModel[Optional[ChatContentMain]]:
         """更新聊天内容"""
         try:
             data = self.storage.read_all()
             for i, item in enumerate(data):
                 if item.get('cid') == cid:
                     # 更新字段
-                    for key, value in updates.items():
+                    for key, value in updates.model_dump().items():
                         if hasattr(ChatContentMain, key):
                             item[key] = value
 
@@ -284,16 +284,17 @@ class ChatContentService:
                     # 写回文件
                     self.storage.write_all(data)
                     return success(updated_content, "聊天内容更新成功")
-            return success(None, "未找到指定聊天内容")
+            return error(message="未找到指定聊天内容")
         except Exception as e:
             return error(500, f"更新聊天内容失败: {str(e)}")
 
     def delete(self, cid: str) -> ResponseModel[bool]:
         """删除聊天内容"""
         try:
-            data = self.storage.read_all()
+            # 获取出当前会话的对话内容
+            data = self.get_all().data
             original_len = len(data)
-            data = [item for item in data if item.get('cid') != cid]
+            data = [item for item in data if item.cid != cid]
 
             if len(data) < original_len:
                 self.storage.write_all(data)

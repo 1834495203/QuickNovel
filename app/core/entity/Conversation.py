@@ -80,8 +80,6 @@ class ChatContent(ChatContentBase):
 
 # 返回和接收前端的额外参数
 class ChatContentMainResp(ChatContentMain):
-    is_complete: bool
-    is_partial: bool
     character: Optional[CharacterCard] = None
 
     def to_chat_content(self):
@@ -89,40 +87,3 @@ class ChatContentMainResp(ChatContentMain):
 
     def to_chat_content_main(self):
         return ChatContentMain(**self.model_dump(exclude={"is_complete", "is_partial", "character"}))
-
-# ---
-
-# 请求创建会话内容
-class CreateConversationRequest(BaseModel):
-    character_id: int
-    root_conversation_id: Optional[int] = -1
-
-
-# 请求创建对话内容
-class CreateChatContentRequest(BaseModel):
-    conversation_id: int
-    role: str
-    user_role_id: int
-    content: str
-    reasoning_content: Optional[str] = None
-    chat_type: ChatMessageType = ChatMessageType.NORMAL_MESSAGE_USER
-
-
-# 返回会话内容
-class ConversationResponse(BaseModel):
-    conversation_id: int
-    character_id: int
-    root_conversation_id: int
-    create_time: float
-
-
-# 返回对话内容
-class ChatContentResponse(BaseModel):
-    cid: str
-    conversation_id: Optional[int]
-    user_role_id: int
-    role: str
-    content: str
-    reasoning_content: Optional[str]
-    chat_type: ChatMessageType
-    create_time: float

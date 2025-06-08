@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import Sidebar from './components/Sidebar.vue'
 
 
-const route = useRoute()
 const sidebarOpen = ref(false)
 const customMenuItems = ref([
   { id: 1, text: '首页', href: '/', icon: '🏠' },
@@ -12,22 +10,6 @@ const customMenuItems = ref([
   { id: 3, text: '创建角色', href: '/character/create', icon: '➕' },
   { id: 4, text: '聊天', href: '/chatting', icon: '💬' }
 ])
-
-// 计算面包屑路径
-const breadcrumbs = computed(() => {
-  const matched = route.matched
-  const crumbs: any[] = []
-  matched.forEach((r, index) => {
-    if (r.name && r.path !== '') {
-      crumbs.push({
-        name: r.name,
-        path: r.path,
-        isLast: index === matched.length - 1
-      })
-    }
-  })
-  return crumbs
-})
 </script>
 
 <template>
@@ -36,21 +18,6 @@ const breadcrumbs = computed(() => {
       :menu-items="customMenuItems"></Sidebar>
 
   <div id="app">
-    <!-- 面包屑导航 -->
-    <nav class="breadcrumbs">
-      <span v-for="(crumb, index) in breadcrumbs" :key="crumb.path">
-        <span v-if="index > 0"> / </span>
-        <router-link
-          v-if="!crumb.isLast"
-          :to="crumb.path"
-          class="breadcrumb-link"
-        >
-          {{ crumb.name }}
-        </router-link>
-        <span v-else class="breadcrumb-current">{{ crumb.name }}</span>
-      </span>
-    </nav>
-
     <!-- 内容区域 -->
     <main class="content">
       <router-view />

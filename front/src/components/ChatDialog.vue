@@ -12,11 +12,58 @@
             <slot name="messages" :messages="messages" :isStreaming="isStreaming">
                 <div v-for="msg in messages" :key="msg.cid" :class="['message', msg.role]">
                     <div class="message-content">
-                        <span class="role-tag">{{ msg.role === 'user' ? '用户' : 'AI' }}</span>
-                        <div class="content">{{ msg.content }}</div>
+                        <div class="message-header">
+                            <span class="role-tag">{{ msg.role === 'user' ? '用户' : 'AI' }}</span>
+                            <div class="message-actions">
+                                <button 
+                                    @click="handleEditMessage(msg.cid)" 
+                                    class="action-btn edit-btn"
+                                    title="编辑"
+                                    v-if="!editingMessageId || editingMessageId !== msg.cid"
+                                >
+                                    编辑
+                                </button>
+                                <button 
+                                    @click="handleSaveEdit(msg)" 
+                                    class="action-btn save-btn"
+                                    title="保存"
+                                    v-if="editingMessageId === msg.cid"
+                                >
+                                    保存
+                                </button>
+                                <button 
+                                    @click="handleCancelEdit()" 
+                                    class="action-btn cancel-btn"
+                                    title="取消"
+                                    v-if="editingMessageId === msg.cid"
+                                >
+                                    取消
+                                </button>
+                                <button 
+                                    @click="handleDeleteMessage(msg.cid, msg.role)" 
+                                    class="action-btn delete-btn"
+                                    title="删除"
+                                >
+                                    删除
+                                </button>
+                            </div>
+                        </div>
+                        <div class="content" v-if="editingMessageId !== msg.cid">{{ msg.content }}</div>
+                        <textarea 
+                            v-if="editingMessageId === msg.cid"
+                            v-model="editingContent"
+                            class="edit-textarea"
+                            rows="3"
+                            @keydown.ctrl.enter="handleSaveEdit(msg)"
+                            @keydown.esc="handleCancelEdit()"
+                        ></textarea>
                         <div v-if="msg.reasoning_content" class="reasoning">
                             <small>推理: {{ msg.reasoning_content }}</small>
                         </div>
+                    </div>
+
+                    <div class="message-time">
+                        {{ formatTime(msg.create_time ?? 0) }}
                     </div>
                 </div>
 
@@ -49,7 +96,9 @@ import { ref, reactive, nextTick, onUnmounted, watch } from 'vue'
 import type { CharacterCard } from '../entity/CharacterEntity'
 import type { ChatContentResponse, ChatMessage, StreamResponse } from '../entity/ConvChatEntity'
 import { ChatMessageType } from '../entity/ConvChatEntity'
+import { deleteChatContent, updateChatContent } from '../api/ConvChatApi'
 import { v4 as uuidv4 } from 'uuid';
+import { showNotify, showNotifyResp } from '../utils/notify'
 
 // Props
 interface Props {
@@ -68,10 +117,15 @@ const emit = defineEmits<{
 }>()
 
 // 响应式数据
-const messages = reactive<ChatContentResponse[]>([])
+const messages = reactive<ChatMessage[]>([])
 const inputMessage = ref('')
 const isStreaming = ref(false)
 const messagesContainer = ref<HTMLElement>()
+
+// 编辑相关状态
+const editingMessageId = ref<string | null>(null)
+const editingContent = ref('')
+const originalContent = ref('')
 
 // 滚动到底部
 const scrollToBottom = async () => {
@@ -90,18 +144,99 @@ watch(() => props.initialMessages, (newMessages) => {
 
 // 添加消息
 const addMessage = (message: Partial<ChatMessage>) => {
-    const newMessage: ChatContentResponse = {
+    const newMessage: ChatMessage = {
         cid: uuidv4(),
         role: message.role || 'user',
         content: message.content || '',
         chat_type: message.chat_type || ChatMessageType.NORMAL_MESSAGE_USER,
         reasoning_content: message.reasoning_content,
-        timestamp: (new Date()).getTime(),
+        create_time: (new Date()).getTime(),
     }
     messages.push(newMessage)
     emit('messageAdded', newMessage)
     scrollToBottom()
     return newMessage
+}
+
+// 删除消息
+const handleDeleteMessage = async (cid: string, role: string) => {
+    try {
+        if (role !== "error") {
+            // 调用删除API
+            const resp = await deleteChatContent(props.conversationId ?? null, cid)
+            showNotifyResp(resp)
+        }
+
+        // 从本地消息列表中移除
+        const index = messages.findIndex(msg => msg.cid === cid)
+        if (index !== -1) {
+            messages.splice(index, 1)
+        }
+
+    } catch (error) {
+        showNotify({
+            type: 'error',
+            message: '删除消息失败',
+        })
+    }
+}
+
+// 开始编辑消息
+const handleEditMessage = (cid: string) => {
+    const message = messages.find(msg => msg.cid === cid)
+    if (message) {
+        editingMessageId.value = cid
+        editingContent.value = message.content
+        originalContent.value = message.content
+    }
+}
+
+// 保存编辑
+const handleSaveEdit = async (message: ChatMessage) => {
+    if (!editingContent.value.trim()) {
+        showNotify({
+            type: 'warning',
+            message: '消息内容不能为空'
+        })
+        return
+    }
+
+    try {
+        // 更新本地消息
+        const updatedMessage = {
+            ...message,
+            content: editingContent.value.trim()
+        }
+
+        // 调用API更新
+        const resp = await updateChatContent(updatedMessage)
+        showNotifyResp(resp)
+
+        if (resp.code === 200) {
+            // 更新本地消息列表
+            const index = messages.findIndex(msg => msg.cid === message.cid)
+            if (index !== -1) {
+                messages[index].content = editingContent.value.trim()
+            }
+            
+            // 退出编辑模式
+            editingMessageId.value = null
+            editingContent.value = ''
+            originalContent.value = ''
+        }
+    } catch (error) {
+        showNotify({
+            type: 'error',
+            message: '更新消息失败'
+        })
+    }
+}
+
+// 取消编辑
+const handleCancelEdit = () => {
+    editingMessageId.value = null
+    editingContent.value = ''
+    originalContent.value = ''
 }
 
 // 处理流式响应
@@ -168,7 +303,8 @@ const handleSend = async () => {
     addMessage({
         role: 'user',
         content: message,
-        chat_type: ChatMessageType.NORMAL_MESSAGE_USER
+        chat_type: ChatMessageType.NORMAL_MESSAGE_USER,
+        create_time: Date.now(),
     })
 
     // 清空输入
@@ -183,8 +319,6 @@ const handleSend = async () => {
             user_role_id: 1,
             conversation_id: props.conversationId ?? null,
             content: message,
-            is_complete: true,
-            is_partial: false,
             chat_type: ChatMessageType.NORMAL_MESSAGE_USER,
             character: props.character ?? null
         }
@@ -248,6 +382,21 @@ const handleSend = async () => {
     }
 }
 
+function formatTime(timestamp: number): string {
+    // 创建 Date 对象，时间戳需要乘以 1000 转换为毫秒
+    const date = new Date(timestamp * 1000);
+
+    // 获取月、日和时间
+    const month = date.getMonth() + 1; // 月份从 0 开始，所以加 1
+    const day = date.getDate();
+    const hours = date.getHours().toString().padStart(2, '0'); // 补零
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+
+    // 返回格式化的字符串，例如 "MM-DD HH:mm:ss"
+    return `${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 // 清理资源
 onUnmounted(() => {
     messages.length = 0
@@ -258,7 +407,8 @@ defineExpose({
     clearMessages: () => {
         messages.length = 0
     },
-    addMessage
+    addMessage,
+    deleteMessage: handleDeleteMessage
 })
 </script>
 
@@ -267,224 +417,222 @@ defineExpose({
     display: flex;
     flex-direction: column;
     height: 100%;
+    background: #fafafa;
 }
 
 .chat-header {
-    background: #f8f9fa;
+    background: #fff;
     padding: 1rem;
-    border-bottom: 1px solid #e1e5e9;
+    border-bottom: 1px solid #e0e0e0;
     text-align: center;
 }
 
 .chat-header h2 {
-    margin: 0 0 1rem 0;
-    color: #2c3e50;
-}
-
-.character-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.conversation-selector {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.conversation-selector label {
+    margin: 0;
+    color: #333;
     font-weight: 500;
-    color: #555;
-}
-
-.conversation-select {
-    padding: 0.25rem 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background: white;
-    font-size: 14px;
-    min-width: 200px;
-}
-
-.conversation-select:focus {
-    outline: none;
-    border-color: #2196f3;
-    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
-}
-
-.new-conversation-btn {
-    padding: 0.25rem 0.75rem;
-    background: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background 0.2s;
-}
-
-.new-conversation-btn:hover {
-    background: #45a049;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .conversation-selector {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .conversation-select {
-        min-width: auto;
-        width: 100%;
-    }
+    font-size: 1.2rem;
 }
 
 .chat-messages {
     flex: 1;
     overflow-y: auto;
     padding: 1rem;
-    background: #ffffff;
+    background: #fafafa;
 }
 
 .message {
     margin-bottom: 1rem;
-    padding: 0.5rem;
+    padding: 0.75rem;
     border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .message.user {
-    background: #e3f2fd;
     margin-left: 2rem;
+    border-left: 3px solid #2196f3;
 }
 
 .message.assistant {
-    background: #f5f5f5;
     margin-right: 2rem;
+    border-left: 3px solid #4caf50;
 }
 
 .message.error {
-    background: #ffebee;
-    border-left: 4px solid #f44336;
+    background: #fff5f5;
+    border-left: 3px solid #f44336;
 }
 
 .message-content {
     word-wrap: break-word;
 }
 
-.role-tag {
-    display: inline-block;
-    padding: 0.2rem 0.5rem;
-    background: #2196f3;
-    color: white;
-    border-radius: 4px;
-    font-size: 0.8rem;
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 0.5rem;
 }
 
-.message.user .role-tag {
-    background: #4caf50;
+.role-tag {
+    font-size: 0.75rem;
+    color: #666;
+    font-weight: 500;
 }
 
-.message.error .role-tag {
-    background: #f44336;
+.message-actions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.message:hover .message-actions {
+    opacity: 1;
+}
+
+.action-btn {
+    background: none;
+    border: 1px solid #e0e0e0;
+    color: #666;
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: #f5f5f5;
+}
+
+.edit-btn:hover {
+    border-color: #2196f3;
+    color: #2196f3;
+}
+
+.save-btn:hover {
+    border-color: #4caf50;
+    color: #4caf50;
+}
+
+.cancel-btn:hover {
+    border-color: #f44336;
+    color: #f44336;
+}
+
+.delete-btn:hover {
+    border-color: #f44336;
+    color: #f44336;
 }
 
 .content {
-    white-space: pre-wrap;
     line-height: 1.5;
+    color: #333;
 }
 
 .reasoning {
     margin-top: 0.5rem;
     padding: 0.5rem;
-    background: rgba(0, 0, 0, 0.05);
+    background: #f8f9fa;
     border-radius: 4px;
-    font-style: italic;
+    color: #666;
+}
+
+.message-time {
+    font-size: 0.7rem;
+    margin-top: 0.5rem;
+    color: #999;
+    text-align: right;
 }
 
 .streaming-indicator {
-    text-align: center;
+    display: flex;
+    justify-content: center;
     padding: 1rem;
 }
 
 .typing-dots {
-    display: inline-block;
+    display: flex;
+    gap: 0.25rem;
 }
 
 .typing-dots span {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
+    background: #ccc;
     border-radius: 50%;
-    background: #2196f3;
-    margin: 0 2px;
     animation: typing 1.4s infinite ease-in-out;
 }
 
-.typing-dots span:nth-child(1) {
-    animation-delay: -0.32s;
-}
-
-.typing-dots span:nth-child(2) {
-    animation-delay: -0.16s;
-}
+.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
 
 @keyframes typing {
-
-    0%,
-    80%,
-    100% {
-        transform: scale(0.8);
-        opacity: 0.5;
-    }
-
-    40% {
-        transform: scale(1);
-        opacity: 1;
-    }
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
 }
 
 .chat-input {
+    background: #fff;
     padding: 1rem;
-    background: #f8f9fa;
-    border-top: 1px solid #e1e5e9;
+    border-top: 1px solid #e0e0e0;
 }
 
 .input-group {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    align-items: flex-end;
 }
 
 textarea {
     flex: 1;
     resize: vertical;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 0.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 0.75rem;
     font-family: inherit;
     font-size: 14px;
+    line-height: 1.4;
+    background: #fff;
+    transition: border-color 0.2s;
 }
 
 textarea:focus {
     outline: none;
     border-color: #2196f3;
-    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.edit-textarea {
+    width: 100%;
+    resize: vertical;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.4;
+    background: #fff;
+    transition: border-color 0.2s;
+}
+
+.edit-textarea:focus {
+    outline: none;
+    border-color: #2196f3;
 }
 
 .send-btn {
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1.5rem;
     background: #2196f3;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
+    font-weight: 500;
     transition: background 0.2s;
+    white-space: nowrap;
 }
 
 .send-btn:hover:not(:disabled) {
@@ -498,19 +646,19 @@ textarea:focus {
 
 /* 滚动条样式 */
 .chat-messages::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
 }
 
 .chat-messages::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: transparent;
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
+    background: #ddd;
+    border-radius: 2px;
 }
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    background: #bbb;
 }
 </style>
