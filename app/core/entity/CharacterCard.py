@@ -87,8 +87,7 @@ class CharacterCard(SimpleCharacterCard):
         )
 
 
-class UserCard(CharacterCard):
+class UserCard:
     id: int
-    is_conn_character: bool = False                    # 声明是否连接角色
     conn_character_id: Optional[int] = None            # 可选，选择对应角色信息
     description: Optional[str] = None                  # 用户说明

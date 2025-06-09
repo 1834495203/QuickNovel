@@ -1,11 +1,5 @@
 import type { CharacterCard } from "./CharacterEntity";
 
-// 请求类型定义
-export interface CreateConversationRequest {
-  character_id: number;
-  root_conversation_id?: number;
-}
-
 // 接收会话内容
 export interface Conversation {
   conversation_id: number;
@@ -37,7 +31,7 @@ export interface ChatMessage {
   chat_type: ChatMessageType
   reasoning_content?: string
   create_time: number
-  conversation_id?: string
+  conversation_id?: string | number | null
   user_role_id?: number
 }
 

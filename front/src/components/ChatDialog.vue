@@ -5,6 +5,9 @@
             <slot name="header">
                 <h2>QuickNovel</h2>
             </slot>
+            <button @click="showAddDialog = true" class="add-message-btn" title="添加对话">
+                + 添加对话
+            </button>
         </div>
 
         <!-- Messages 插槽 -->
@@ -88,6 +91,49 @@
                 </div>
             </slot>
         </div>
+
+        <!-- 添加对话弹窗 -->
+        <div v-if="showAddDialog" class="dialog-overlay" @click="closeAddDialog">
+            <div class="add-dialog" @click.stop>
+                <div class="dialog-header">
+                    <h3>添加对话</h3>
+                    <button @click="closeAddDialog" class="close-btn">×</button>
+                </div>
+                <div class="dialog-content">
+                    <div class="form-group">
+                        <label>对话类型:</label>
+                        <select v-model="addForm.role">
+                            <option value="user">用户</option>
+                            <option value="assistant">AI助手</option>
+                            <option value="system">系统</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>对话内容:</label>
+                        <textarea 
+                            v-model="addForm.content" 
+                            placeholder="请输入对话内容..."
+                            rows="4"
+                            @keydown.ctrl.enter="handleAddMessage"
+                        ></textarea>
+                    </div>
+                    <div class="form-group" v-if="addForm.role === 'assistant'">
+                        <label>推理内容 (可选):</label>
+                        <textarea 
+                            v-model="addForm.reasoning_content" 
+                            placeholder="请输入推理内容..."
+                            rows="2"
+                        ></textarea>
+                    </div>
+                </div>
+                <div class="dialog-actions">
+                    <button @click="closeAddDialog" class="cancel-btn">取消</button>
+                    <button @click="handleAddMessage" :disabled="!addForm.content.trim() || isAdding" class="confirm-btn">
+                        {{ isAdding ? '添加中...' : '确认添加' }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -96,7 +142,7 @@ import { ref, reactive, nextTick, onUnmounted, watch } from 'vue'
 import type { CharacterCard } from '../entity/CharacterEntity'
 import type { ChatContentResponse, ChatMessage, StreamResponse } from '../entity/ConvChatEntity'
 import { ChatMessageType } from '../entity/ConvChatEntity'
-import { deleteChatContent, updateChatContent } from '../api/ConvChatApi'
+import { deleteChatContent, updateChatContent, createChatContent } from '../api/ConvChatApi'
 import { v4 as uuidv4 } from 'uuid';
 import { showNotify, showNotifyResp } from '../utils/notify'
 
@@ -126,6 +172,15 @@ const messagesContainer = ref<HTMLElement>()
 const editingMessageId = ref<string | null>(null)
 const editingContent = ref('')
 const originalContent = ref('')
+
+// 添加对话相关状态
+const showAddDialog = ref(false)
+const isAdding = ref(false)
+const addForm = reactive({
+    role: 'user' as 'user' | 'assistant' | 'system',
+    content: '',
+    reasoning_content: ''
+})
 
 // 滚动到底部
 const scrollToBottom = async () => {
@@ -237,6 +292,78 @@ const handleCancelEdit = () => {
     editingMessageId.value = null
     editingContent.value = ''
     originalContent.value = ''
+}
+
+// 关闭添加对话弹窗
+const closeAddDialog = () => {
+    showAddDialog.value = false
+    addForm.role = 'user'
+    addForm.content = ''
+    addForm.reasoning_content = ''
+}
+
+// 处理添加对话
+const handleAddMessage = async () => {
+    if (!addForm.content.trim() || isAdding.value) return
+
+    isAdding.value = true
+
+    try {
+        // 确定对话类型
+        let chatType: ChatMessageType
+        switch (addForm.role) {
+            case 'user':
+                chatType = ChatMessageType.NORMAL_MESSAGE_USER
+                break
+            case 'assistant':
+                chatType = ChatMessageType.NORMAL_MESSAGE_ASSISTANT
+                break
+            case 'system':
+                chatType = ChatMessageType.SYSTEM_PROMPT
+                break
+            default:
+                chatType = ChatMessageType.NORMAL_MESSAGE_USER
+        }
+
+        // 构建消息对象
+        const newMessage: ChatMessage = {
+            cid: uuidv4(),
+            role: addForm.role,
+            content: addForm.content.trim(),
+            chat_type: chatType,
+            reasoning_content: addForm.role === 'assistant' ? addForm.reasoning_content : undefined,
+            create_time: Date.now(),
+            conversation_id: props.conversationId ?? null,
+            user_role_id: 1
+        }
+
+        // 调用API创建对话
+        const resp = await createChatContent(newMessage)
+        showNotifyResp(resp)
+
+        if (resp.code === 200) {
+            // 添加到本地消息列表
+            messages.push(newMessage)
+            emit('messageAdded', newMessage)
+            scrollToBottom()
+            
+            // 关闭弹窗
+            closeAddDialog()
+            
+            showNotify({
+                type: 'success',
+                message: '对话添加成功'
+            })
+        }
+    } catch (error) {
+        console.error('添加对话失败:', error)
+        showNotify({
+            type: 'error',
+            message: '添加对话失败'
+        })
+    } finally {
+        isAdding.value = false
+    }
 }
 
 // 处理流式响应
@@ -425,13 +552,26 @@ defineExpose({
     padding: 1rem;
     border-bottom: 1px solid #e0e0e0;
     text-align: center;
+    position: relative;
 }
 
-.chat-header h2 {
-    margin: 0;
-    color: #333;
-    font-weight: 500;
-    font-size: 1.2rem;
+.add-message-btn {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background 0.2s;
+}
+
+.add-message-btn:hover {
+    background: #1976d2;
 }
 
 .chat-messages {
@@ -660,5 +800,142 @@ textarea:focus {
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
     background: #bbb;
+}
+
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.add-dialog {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.dialog-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.close-btn:hover {
+    background: #f5f5f5;
+}
+
+.dialog-content {
+    padding: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #333;
+    font-weight: 500;
+}
+
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 0.75rem;
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #2196f3;
+}
+
+.form-group textarea {
+    resize: vertical;
+    line-height: 1.4;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.cancel-btn,
+.confirm-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.cancel-btn {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.cancel-btn:hover {
+    background: #e0e0e0;
+}
+
+.confirm-btn {
+    background: #2196f3;
+    color: white;
+}
+
+.confirm-btn:hover:not(:disabled) {
+    background: #1976d2;
+}
+
+.confirm-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
 }
 </style>

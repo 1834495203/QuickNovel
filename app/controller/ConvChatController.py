@@ -56,7 +56,7 @@ async def create_conversation(
             character_id=created_conversation.character_id,
             root_conversation_id=created_conversation.root_conversation_id,
             create_time=created_conversation.create_time
-        ))
+        ), message="创建会话成功")
     except HTTPException:
         raise
     except Exception as e:
@@ -105,7 +105,7 @@ async def get_chats_by_conversation(
             if not conversation_response.data:
                 raise HTTPException(status_code=404, detail=f"会话 {conversation_id} 不存在")
 
-        chat_response = chat_content_service.get_by_conversation_id(conversation_id)
+        chat_response = chat_content_service.get_by_conversation_id()
         if chat_response.code != 200:
             raise HTTPException(status_code=500, detail=chat_response.message)
         
@@ -169,9 +169,8 @@ async def update_chat_content_in_conversation(
         chat_content_service: ChatContentService = Depends(get_chat_content_service),
         conversation_service: ConversationService = Depends(get_conversation_service)):
     """
-    在指定的会话中根据CID更新对话内容
+    在指定的会话中根据cid更新对话内容
     """
-    print(chat_content)
     conversation_id = chat_content.conversation_id
     cid = chat_content.cid
     try:
@@ -183,8 +182,6 @@ async def update_chat_content_in_conversation(
             chat_content_service.set_conversation_id(conversation_id)
 
         update_response = chat_content_service.update(cid, chat_content)
-        print(update_response)
-
         if update_response.code != 200:
             # This implies a server-side issue with the service itself if code is not 200
             logging.error(update_response.message)
@@ -195,6 +192,34 @@ async def update_chat_content_in_conversation(
 
         return success(data=True, message=f"对话内容 {cid} 已成功从会话 {conversation_id} 中更新")
 
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(str(e))
+        return error(message="系统内部错误")
+
+
+@conv_chat_router.post("/conversations/chats", response_model=ResponseModel)
+async def create_chat_content(
+        chat_content: ChatContentMain,
+        chat_content_service: ChatContentService = Depends(get_chat_content_service),
+        conversation_service: ConversationService = Depends(get_conversation_service)):
+    """
+    在会话中添加消息(llm不回复)
+    """
+    conversation_id = chat_content.conversation_id
+    try:
+        if conversation_id is not None:
+            # 会话模式下，检查是否有该会话
+            resp = conversation_service.get_by_id(conversation_id)
+            if resp.code != 200:
+                return error(message=resp.message)
+            chat_content_service.set_conversation_id(conversation_id)
+        create_response = chat_content_service.create(chat_content)
+        if create_response.code != 200:
+            logging.error(create_response.message)
+            return error(message=create_response.message)
+        return success(message="添加对话成功")
     except HTTPException:
         raise
     except Exception as e:

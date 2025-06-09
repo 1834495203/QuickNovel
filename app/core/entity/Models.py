@@ -27,7 +27,8 @@ class Chat:
             self.messages.append(message.to_chat_content())
 
     def get_messages(self):
-        msg_in_jsonl = self.chat_content_service.get_by_conversation_id(self.conversation_id).data
+        self.chat_content_service.set_conversation_id(self.conversation_id)
+        msg_in_jsonl = self.chat_content_service.get_by_conversation_id().data
         if len(msg_in_jsonl) != 0:
             for msg in msg_in_jsonl:
                 self.messages.append(msg.to_chat_content())

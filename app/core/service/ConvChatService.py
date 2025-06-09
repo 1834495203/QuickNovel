@@ -1,7 +1,7 @@
 import os
 import uuid
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 
 from core.entity.Conversation import Conversation, ChatContentMain, ChatMessageType
 from core.utils.JsonlStorage import JSONLStorage
@@ -94,28 +94,6 @@ class ConversationService:
         except Exception as e:
             return error(500, f"根据角色ID获取会话失败: {str(e)}")
 
-    def update(self, conversation_id: int, updates: Dict[str, Any]) -> ResponseModel[Optional[Conversation]]:
-        """更新会话"""
-        try:
-            data = self.storage.read_all()
-            for i, item in enumerate(data):
-                if item.get('conversation_id') == conversation_id:
-                    # 更新字段
-                    for key, value in updates.items():
-                        if hasattr(Conversation, key):
-                            item[key] = value
-
-                    # 验证更新后的数据
-                    updated_conversation = Conversation(**item)
-                    data[i] = updated_conversation
-
-                    # 写回文件
-                    self.storage.write_all(data)
-                    return success(updated_conversation, "会话更新成功")
-            return error(message="未找到指定会话")
-        except Exception as e:
-            return error(500, f"更新会话失败: {str(e)}")
-
     def delete(self, conversation_id: int) -> ResponseModel[bool]:
         """删除会话"""
         try:
@@ -156,6 +134,7 @@ class ChatContentService:
         :param conversation_id: 会话ID，用于确定对话文件路径
         :param db_path: 直接指定数据库路径（优先级高于conversation_id）
         """
+        self.conversation_id = conversation_id
         if db_path:
             self.storage = JSONLStorage(db_path)
         elif conversation_id is not None:
@@ -217,12 +196,11 @@ class ChatContentService:
         except Exception as e:
             return error(500, f"获取所有聊天内容失败: {str(e)}")
 
-    def get_by_conversation_id(self, conversation_id: int) -> ResponseModel[List[ChatContentMain]]:
+    def get_by_conversation_id(self) -> ResponseModel[List[ChatContentMain]]:
         """根据会话ID获取聊天内容"""
         try:
             # 如果当前服务实例不是为指定会话创建的，则创建新的服务实例
-            target_service = self.get_service_for_conversation(conversation_id)
-            data = target_service.storage.read_all()
+            data = self.storage.read_all()
             result = []
             for item in data:
                 # 处理enum反序列化
@@ -270,8 +248,7 @@ class ChatContentService:
                 if item.get('cid') == cid:
                     # 更新字段
                     for key, value in updates.model_dump().items():
-                        if hasattr(ChatContentMain, key):
-                            item[key] = value
+                        item[key] = value
 
                     # 处理enum反序列化
                     if 'chat_type' in item and isinstance(item['chat_type'], int):
@@ -383,14 +360,9 @@ def example_usage():
     if conversations_response.code == 200:
         print(f"All conversations: {len(conversations_response.data)}")
 
-    chat_contents_response = chat_content_crud.get_by_conversation_id(1)
+    chat_contents_response = chat_content_crud.get_by_conversation_id()
     if chat_contents_response.code == 200:
         print(f"Chat contents for conversation 1: {len(chat_contents_response.data)}")
-
-    # 更新示例
-    updated_response = conversation_crud.update(1, {"character_id": 200})
-    if updated_response.code == 200:
-        print(f"Updated conversation: {updated_response.data}")
 
     # 搜索示例
     search_response = chat_content_crud.search_content("hello")

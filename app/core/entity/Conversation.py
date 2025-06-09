@@ -29,7 +29,7 @@ class ChatMessageType(Enum):
 
 class Conversation(BaseModel):
     root_conversation_id: int                        # 表示上一个父节点的会话id -1表示根节点
-    conversation_id: int                             # 会话唯一id
+    conversation_id: Optional[int]                   # 会话唯一id
     character_id: int = None                         # 对话角色id
     create_time: Optional[float] = None              # 创建时间戳
 

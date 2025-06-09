@@ -32,7 +32,7 @@ import { showNotify } from '../utils/notify'
 import { getConversationsByCharacter, getChatsByConversation, createConversationWithNotify } from '../api/ConvChatApi'
 import { getCharacterById } from '../api/characterApi'
 import type { CharacterCard } from '../entity/CharacterEntity'
-import type { ChatContentResponse, ConversationResponse, CreateConversationRequest } from '../entity/ConvChatEntity'
+import type { ChatContentResponse, Conversation } from '../entity/ConvChatEntity'
 import ChatDialog from '../components/ChatDialog.vue'
 
 // 响应式数据
@@ -44,7 +44,7 @@ let character_id = useRoute().query.character_id as string
 // 当前对话角色
 let character = ref<CharacterCard>()
 //角色所有会话
-const conversations = ref<ConversationResponse[]>([])
+const conversations = ref<Conversation[]>([])
 // 当前选中的会话ID
 const selectedConversationId = ref<number | null>(null)
 
@@ -85,8 +85,11 @@ onMounted(async () => {
 const createNewConversation = async () => {
     if (!character_id) return
 
-    const request: CreateConversationRequest = {
-        character_id: parseInt(character_id)
+    const request: Conversation = {
+        character_id: parseInt(character_id),
+        root_conversation_id: -1,
+        conversation_id: selectedConversationId.value ?? -1,
+        create_time: Math.floor(Date.now() / 1000),
     }
 
     const newConversation = await createConversationWithNotify(request)

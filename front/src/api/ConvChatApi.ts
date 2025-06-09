@@ -3,7 +3,6 @@ import apiClient from '../axios/axios';
 import type { ResponseModel } from '../entity/ResponseEntity';
 import { showNotifyResp } from '../utils/notify';
 import type {
-  CreateConversationRequest,
   Conversation,
   ChatContentResponse,
   ChatMessage
@@ -12,8 +11,14 @@ import type {
 const CONV_CHAT_API_BASE_PATH = '/api/chat';
 
 // 创建会话
-export const createConversation = async (request: CreateConversationRequest): Promise<ResponseModel<Conversation>> => {
+export const createConversation = async (request: Conversation): Promise<ResponseModel<Conversation>> => {
   const responseData = await apiClient.post<ResponseModel>(`${CONV_CHAT_API_BASE_PATH}/conversations`, request);
+  return responseData.data;
+};
+
+// 创建对话
+export const createChatContent = async (chatMessage: ChatMessage): Promise<ResponseModel> => {
+  const responseData = await apiClient.post<ResponseModel>(`${CONV_CHAT_API_BASE_PATH}/conversations/chats`, chatMessage);
   return responseData.data;
 };
 
@@ -46,7 +51,7 @@ export const updateChatContent = async (chat_message: ChatMessage): Promise<Resp
 };
 
 // 辅助函数 - 带通知的创建会话
-export const createConversationWithNotify = async (request: CreateConversationRequest): Promise<Conversation | null> => {
+export const createConversationWithNotify = async (request: Conversation): Promise<Conversation | null> => {
   try {
     const result = await createConversation(request);
     console.log('创建会话结果:', result);

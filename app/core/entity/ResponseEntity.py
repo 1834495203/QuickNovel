@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar, Optional, Any
+from typing import Generic, TypeVar, Optional
 from pydantic import BaseModel
 
 # 定义泛型类型变量
