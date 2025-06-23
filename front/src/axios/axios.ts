@@ -46,7 +46,7 @@ instance.interceptors.response.use(
     if (error.response) {
       // 服务器返回了状态码
       const status = error.response.status;
-      let message = "服务器错误";
+      let message = error.response.message;
       if (status === 404) {
         message = "请求的资源不存在";
       } else if (status === 500) {
