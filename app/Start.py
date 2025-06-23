@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 from starlette.responses import JSONResponse
 
+from controller.CharacterController import character_router
 from core.entity.ResponseEntity import error
 from core.utils.CustomizeException import ApiError
 
@@ -26,6 +27,10 @@ app.add_middleware(
 
 # 挂载静态文件目录
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+app.include_router(character_router)
+
 
 @app.get("/")
 async def root():

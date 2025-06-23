@@ -15,7 +15,7 @@ class CharacterMapperInterface(ABC):
     def create_character(self, character: CreateCharacterDto) -> bool:
         raise NotImplementedError()
 
-    def update_avatar(self, character_id, avatar) -> bool:
+    def update_avatar(self, character_id: int, avatar: str) -> bool:
         raise NotImplementedError()
 
     def get_all_characters(self) -> List[ResponseCharacterDto]:
@@ -77,7 +77,6 @@ class CharacterMapper(CharacterMapperInterface):
         logging.info(f"创建角色成功，id为:{c.character_id}，角色信息为:{c}")
         return c.character_id
 
-
     @db_session
     def update_avatar(self, character_id, avatar) -> bool:
         character = self.select_character_by_id(character_id)
@@ -92,7 +91,6 @@ class CharacterMapper(CharacterMapperInterface):
         character.avatar = avatar
         logging.info(f"更新头像完成，角色id为{character_id}")
         return True
-
 
     @db_session
     def get_all_characters(self) -> List[ResponseCharacterDto]:
@@ -151,7 +149,6 @@ class CharacterMapper(CharacterMapperInterface):
         character.delete()
         logging.info(f"删除角色id为{character_id}成功")
         return True
-
 
     @db_session
     def select_character_by_id(self, character_id: int) -> ResponseCharacterDto:
