@@ -18,7 +18,7 @@
       <div class="form-group">
         <label>性格特点</label>
         <ul>
-          <li v-for="(trait, idx) in character.personality!.traits" :key="idx" class="trait-list-item-edit">
+          <li v-for="(trait, idx) in character!.traits" :key="idx" class="trait-list-item-edit">
             <input v-model="trait.label" type="text" class="form-input" placeholder="特点标签" />
             <textarea v-model="trait.description" class="form-textarea" placeholder="特点描述" />
             <button type="button" class="remove-button" @click="removeTrait(idx)">移除</button>
@@ -28,12 +28,12 @@
       </div>
       <div class="form-group">
         <label>背景故事</label>
-        <textarea v-model="character.background!.background_story" class="form-textarea" />
+        <textarea v-model="character!.background_story" class="form-textarea" />
       </div>
       <div class="form-group">
         <label>说话风格</label>
         <div>
-          <div v-for="(style, idx) in character.behaviors!.speakingStyle" :key="idx" class="list-item-edit">
+          <div v-for="(style, idx) in character!.speakings" :key="idx" class="list-item-edit">
             <input v-model="style.role" type="text" class="form-input" placeholder="角色" />
             <textarea v-model="style.content" class="form-textarea" placeholder="内容" />
             <textarea v-model="style.reply" class="form-textarea" placeholder="回复" />
@@ -45,9 +45,9 @@
       <div class="form-group">
         <label>自定义字段</label>
         <ul>
-          <li v-for="(field, idx) in character.customize!.fields" :key="idx" class="list-item-edit">
-            <input v-model="field.fieldName" type="text" class="form-input" placeholder="字段名称" />
-            <input v-model="field.fieldValue" type="text" class="form-input" placeholder="字段值" />
+          <li v-for="(field, idx) in character.distinct!" :key="idx" class="list-item-edit">
+            <input v-model="field.name" type="text" class="form-input" placeholder="字段名称" />
+            <input v-model="field.content" type="text" class="form-input" placeholder="字段值" />
             <button type="button" class="remove-button" @click="removeCustomField(idx)">移除</button>
           </li>
         </ul>
@@ -77,10 +77,10 @@ const character = reactive<CharacterCard>({
   name: '',
   avatar: '', 
   description: '',
-  personality: { traits: [] },
-  background: { background_story: '' },
-  behaviors: { speakingStyle: [] },
-  customize: { fields: [] }
+  traits: [],
+  background_story: '',
+  speakings: [],
+  distinct: []
 });
 
 function handleAvatarUpload(event: Event) {
@@ -98,33 +98,33 @@ function handleAvatarUpload(event: Event) {
 }
 
 function addTrait() {
-  if (!character.personality) {
-    character.personality = { traits: [] };
-  } else if (character.personality.traits === undefined) {
-    character.personality.traits = [];
+  if (!character.traits) {
+    character.traits = [];
+  } else if (character.traits === undefined) {
+    character.traits = [];
   }
-  character.personality.traits!.push({ label: '', description: '' });
+  character.traits!.push({ label: '', description: '' });
 }
 function removeTrait(idx: number) {
-  character.personality?.traits?.splice(idx, 1);
+  character?.traits?.splice(idx, 1);
 }
 function addSpeakingStyle() {
-  if (!character.behaviors) {
-    character.behaviors = { speakingStyle: [] };
+  if (!character.speakings) {
+    character.speakings = [];
   }
-  character.behaviors.speakingStyle.push({ role: '', content: '', reply: '' });
+  character.speakings.push({ role: '', content: '', reply: '' });
 }
 function removeSpeakingStyle(idx: number) {
-  character.behaviors?.speakingStyle?.splice(idx, 1);
+  character?.speakings?.splice(idx, 1);
 }
 function addCustomField() {
-  if (!character.customize) {
-    character.customize = { fields: [] };
+  if (!character.distinct) {
+    character.distinct = [];
   }
-  character.customize.fields.push({ fieldName: '', fieldValue: '' });
+  character.distinct.push({ name: '', content: '' });
 }
 function removeCustomField(idx: number) {
-  character.customize?.fields?.splice(idx, 1);
+  character.distinct?.splice(idx, 1);
 }
 
 async function handleSubmit() {

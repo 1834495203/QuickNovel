@@ -4,7 +4,7 @@ import type { CharacterCard } from '../entity/CharacterEntity';
 import type { ResponseModel } from '../entity/ResponseEntity';
 import { showNotifyResp } from '../utils/notify'; // 导入通知函数
 
-const CHARACTER_API_BASE_PATH = '/api/characters'; // API 的基础路径
+const CHARACTER_API_BASE_PATH = '/api/character'; // API 的基础路径
 
 // axios.ts 中的拦截器会处理 ResponseModel 并返回其 data 字段 (T)
 // 因此，这里的函数签名应为 Promise<T>

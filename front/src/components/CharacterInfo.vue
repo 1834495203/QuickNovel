@@ -43,10 +43,10 @@
 
     <div v-if="isExpanded || isEditing" class="details-section">
       <!-- Personality Traits -->
-      <div v-if="!isEditing && character.personality && character.personality.traits">
+      <div v-if="!isEditing && character && character.traits">
         <h3>性格特点:</h3>
         <ul>
-          <li v-for="(trait, index) in character.personality.traits" :key="index" class="trait-list-item">
+          <li v-for="(trait, index) in character.traits" :key="index" class="trait-list-item">
             <div class="trait-label"><strong>{{ trait.label }}</strong></div>
             <div class="trait-description-text">{{ trait.description }}</div>
           </li>
@@ -54,8 +54,8 @@
       </div>
       <div v-if="isEditing && editableCharacter">
         <h3>性格特点:</h3>
-        <ul v-if="editableCharacter.personality && editableCharacter.personality.traits">
-          <li v-for="(trait, index) in editableCharacter.personality.traits" :key="`trait-${index}`"
+        <ul v-if="editableCharacter && editableCharacter.traits">
+          <li v-for="(trait, index) in editableCharacter.traits" :key="`trait-${index}`"
             class="trait-list-item-edit">
             <input type="text" v-model="trait.label" placeholder="特点标签" class="form-input" />
             <textarea v-model="trait.description" placeholder="特点描述" class="form-textarea"></textarea>
@@ -66,23 +66,23 @@
       </div>
 
       <!-- Background Story (View Mode) -->
-      <div v-if="!isEditing && character.background && character.background.background_story">
+      <div v-if="!isEditing && character && character.background_story">
         <h3>背景故事:</h3>
-        <p>{{ character.background.background_story }}</p>
+        <p>{{ character.background_story }}</p>
       </div>
       <!-- Background Story (Edit Mode) -->
-      <div v-if="isEditing && editableCharacter && editableCharacter.background">
+      <div v-if="isEditing && editableCharacter && editableCharacter.background_story">
         <h3>背景故事:</h3>
-        <textarea v-model="editableCharacter.background.background_story" placeholder="背景故事"
+        <textarea v-model="editableCharacter.background_story" placeholder="背景故事"
           class="form-textarea"></textarea>
       </div>
 
       <!-- Speaking Style (View Mode) -->
       <div
-        v-if="!isEditing && character.behaviors && character.behaviors.speakingStyle && character.behaviors.speakingStyle.length > 0">
+        v-if="!isEditing && character && character.speakings && character.speakings.length > 0">
         <h3>说话风格:</h3>
         <ul>
-          <li v-for="(style, index) in character.behaviors.speakingStyle" :key="`style-view-${index}`">
+          <li v-for="(style, index) in character.speakings" :key="`style-view-${index}`">
             <p><strong>角色:</strong> {{ style.role }}</p>
             <p><strong>内容:</strong> {{ style.content }}</p>
             <p><strong>回复:</strong> {{ style.reply }}</p>
@@ -90,10 +90,10 @@
         </ul>
       </div>
       <!-- Speaking Style (Edit Mode) -->
-      <div v-if="isEditing && editableCharacter && editableCharacter.behaviors">
+      <div v-if="isEditing && editableCharacter && editableCharacter.speakings">
         <h3>说话风格:</h3>
-        <ul v-if="editableCharacter.behaviors.speakingStyle">
-          <li v-for="(style, index) in editableCharacter.behaviors.speakingStyle" :key="`style-edit-${index}`"
+        <ul v-if="editableCharacter.speakings">
+          <li v-for="(style, index) in editableCharacter.speakings" :key="`style-edit-${index}`"
             class="list-item-edit">
             <input type="text" v-model="style.role" placeholder="角色" class="form-input" />
             <textarea v-model="style.content" placeholder="内容" class="form-textarea"></textarea>
@@ -106,22 +106,22 @@
 
       <!-- Custom Fields (View Mode) -->
       <div
-        v-if="!isEditing && character.customize && character.customize.fields && character.customize.fields.length > 0">
+        v-if="!isEditing && character && character.distinct && character.distinct.length > 0">
         <h3>自定义字段:</h3>
         <ul>
-          <li v-for="(field, index) in character.customize.fields" :key="`field-view-${index}`">
-            <strong>{{ field.fieldName }}:</strong> {{ field.fieldValue }}
+          <li v-for="(field, index) in character.distinct" :key="`field-view-${index}`">
+            <strong>{{ field.name }}:</strong> {{ field.content }}
           </li>
         </ul>
       </div>
       <!-- Custom Fields (Edit Mode) -->
-      <div v-if="isEditing && editableCharacter && editableCharacter.customize">
+      <div v-if="isEditing && editableCharacter && editableCharacter.distinct">
         <h3>自定义字段:</h3>
-        <ul v-if="editableCharacter.customize.fields">
-          <li v-for="(field, index) in editableCharacter.customize.fields" :key="`field-edit-${index}`"
+        <ul v-if="editableCharacter.distinct">
+          <li v-for="(field, index) in editableCharacter.distinct" :key="`field-edit-${index}`"
             class="list-item-edit">
-            <input type="text" v-model="field.fieldName" placeholder="字段名称" class="form-input" />
-            <input type="text" v-model="field.fieldValue" placeholder="字段值" class="form-input" />
+            <input type="text" v-model="field.name" placeholder="字段名称" class="form-input" />
+            <input type="text" v-model="field.content" placeholder="字段值" class="form-input" />
             <button @click="removeCustomField(index)" class="remove-button">移除字段</button>
           </li>
         </ul>
@@ -218,23 +218,23 @@ const startEdit = () => {
   avatarPreviewUrlRef.value = null;
 
   if (editableCharacter.value) {
-    if (!editableCharacter.value.personality) {
-      editableCharacter.value.personality = { traits: [] };
-    } else if (!editableCharacter.value.personality.traits) {
-      editableCharacter.value.personality.traits = [];
+    if (!editableCharacter.value.traits) {
+      editableCharacter.value.traits = [];
+    } else if (!editableCharacter.value.traits) {
+      editableCharacter.value.traits = [];
     }
-    if (!editableCharacter.value.background) {
-      editableCharacter.value.background = { background_story: '' };
+    if (!editableCharacter.value.background_story) {
+      editableCharacter.value.background_story = '';
     }
-    if (!editableCharacter.value.behaviors) {
-      editableCharacter.value.behaviors = { speakingStyle: [] };
-    } else if (!editableCharacter.value.behaviors.speakingStyle) {
-      editableCharacter.value.behaviors.speakingStyle = [];
+    if (!editableCharacter.value.speakings) {
+      editableCharacter.value.speakings = [];
+    } else if (!editableCharacter.value.speakings) {
+      editableCharacter.value.speakings = [];
     }
-    if (!editableCharacter.value.customize) {
-      editableCharacter.value.customize = { fields: [] };
-    } else if (!editableCharacter.value.customize.fields) {
-      editableCharacter.value.customize.fields = [];
+    if (!editableCharacter.value.distinct) {
+      editableCharacter.value.distinct = [];
+    } else if (!editableCharacter.value.distinct) {
+      editableCharacter.value.distinct = [];
     }
   }
   isEditing.value = true;
@@ -311,55 +311,55 @@ const deleteCharacter = async () => {
 
 const addTrait = () => {
   if (editableCharacter.value) {
-    if (!editableCharacter.value.personality) {
-      editableCharacter.value.personality = { traits: [] };
+    if (!editableCharacter.value.traits) {
+      editableCharacter.value.traits = [];
     }
-    if (!editableCharacter.value.personality.traits) {
-      editableCharacter.value.personality.traits = [];
+    if (!editableCharacter.value.traits) {
+      editableCharacter.value.traits = [];
     }
-    editableCharacter.value.personality.traits.push({ label: '', description: '' });
+    editableCharacter.value.traits.push({ label: '', description: '' });
   }
 };
 
 const removeTrait = (index: number) => {
-  if (editableCharacter.value && editableCharacter.value.personality && editableCharacter.value.personality.traits) {
-    editableCharacter.value.personality.traits.splice(index, 1);
+  if (editableCharacter.value && editableCharacter.value.traits && editableCharacter.value.traits) {
+    editableCharacter.value.traits.splice(index, 1);
   }
 };
 
 const addSpeakingStyle = () => {
   if (editableCharacter.value) {
-    if (!editableCharacter.value.behaviors) {
-      editableCharacter.value.behaviors = { speakingStyle: [] };
+    if (!editableCharacter.value.speakings) {
+      editableCharacter.value.speakings = [];
     }
-    if (!editableCharacter.value.behaviors.speakingStyle) {
-      editableCharacter.value.behaviors.speakingStyle = [];
+    if (!editableCharacter.value.speakings) {
+      editableCharacter.value.speakings = [];
     }
-    editableCharacter.value.behaviors.speakingStyle.push({ role: '', content: '', reply: '' });
+    editableCharacter.value.speakings.push({ role: '', content: '', reply: '' });
   }
 };
 
 const removeSpeakingStyle = (index: number) => {
-  if (editableCharacter.value && editableCharacter.value.behaviors && editableCharacter.value.behaviors.speakingStyle) {
-    editableCharacter.value.behaviors.speakingStyle.splice(index, 1);
+  if (editableCharacter.value && editableCharacter.value.speakings && editableCharacter.value.speakings) {
+    editableCharacter.value.speakings.splice(index, 1);
   }
 };
 
 const addCustomField = () => {
   if (editableCharacter.value) {
-    if (!editableCharacter.value.customize) {
-      editableCharacter.value.customize = { fields: [] };
+    if (!editableCharacter.value.distinct) {
+      editableCharacter.value.distinct = [];
     }
-    if (!editableCharacter.value.customize.fields) {
-      editableCharacter.value.customize.fields = [];
+    if (!editableCharacter.value.distinct) {
+      editableCharacter.value.distinct = [];
     }
-    editableCharacter.value.customize.fields.push({ fieldName: '', fieldValue: '' });
+    editableCharacter.value.distinct.push({ name: '', content: '' });
   }
 };
 
 const removeCustomField = (index: number) => {
-  if (editableCharacter.value && editableCharacter.value.customize && editableCharacter.value.customize.fields) {
-    editableCharacter.value.customize.fields.splice(index, 1);
+  if (editableCharacter.value && editableCharacter.value.distinct && editableCharacter.value.distinct) {
+    editableCharacter.value.distinct.splice(index, 1);
   }
 };
 

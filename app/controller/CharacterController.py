@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File
 
 from core.entity.ResponseEntity import ResponseModel
 from core.entity.dto.CharacterDto import ResponseCharacterDto, CreateCharacterDto
@@ -40,3 +40,10 @@ def delete_character(
         character_id: int,
         character_service: CharacterService = Depends(get_character_service)) -> ResponseModel:
     return character_service.delete_character(character_id)
+
+
+@character_router.post("/{character_id}/avatar")
+def update_avatar(character_id: int,
+                  avatar: UploadFile = File(...),
+                  character_service: CharacterService = Depends(get_character_service)) -> ResponseModel:
+    return character_service.update_avatar(character_id, avatar)

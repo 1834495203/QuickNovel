@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,12 +9,24 @@ from starlette.responses import JSONResponse
 
 from controller.CharacterController import character_router
 from core.entity.ResponseEntity import error
+from core.mapper.config.DatabaseConfig import db
 from core.utils.CustomizeException import ApiError
+
+
+@asynccontextmanager
+async def lifespan(api: FastAPI):
+    # 确保在应用启动时生成数据库映射
+    logging.info("生成数据库映射...")
+    # Pony ORM 的 generate_mapping 不需要 await
+    db.generate_mapping(create_tables=True)
+    yield
+    logging.info("数据库映射生成完毕。")
 
 app = FastAPI(
     title="QuickNovel API",
     description="QuickNovel",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 # 配置CORS
