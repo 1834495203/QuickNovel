@@ -3,8 +3,10 @@ import uuid
 from pathlib import Path
 from typing import List
 
+from fastapi import UploadFile
+
 from core.entity.ResponseEntity import ResponseModel, success, warning
-from core.entity.dto.CharacterDto import CreateCharacterDto, ResponseCharacterDto
+from core.entity.dto.CharacterDto import CreateCharacterDto, ResponseCharacterDto, UpdateCharacterDto
 from core.mapper.CharacterMapper import CharacterMapperInterface
 
 
@@ -38,9 +40,15 @@ class CharacterService:
         is_delete = self.character_mapper.delete_character_by_id(character_id)
         if is_delete:
             return success(f"成功删除角色id为{character_id}的角色")
-        return warning(message="删除角色id为{character_id}失败")
+        return warning(message=f"删除角色id为{character_id}的角色失败")
 
-    def update_avatar(self, character_id: int, avatar_file) -> ResponseModel:
+    def update_character(self, character: UpdateCharacterDto) -> ResponseModel:
+        is_update = self.character_mapper.update_character(character)
+        if is_update:
+            return success(f"成功更新角色id为{character.id}的角色")
+        return warning(message=f"更新角色id为{character.id}的角色失败")
+
+    def update_avatar(self, character_id: int, avatar_file: UploadFile) -> ResponseModel:
         # 验证文件扩展名
         if not self.validate_file_extension(avatar_file.filename):
             raise ValueError("不支持的文件格式，仅允许 PNG、JPG、JPEG")

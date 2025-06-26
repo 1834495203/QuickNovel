@@ -26,19 +26,29 @@ class CreateCharacterDto(BaseModel):
     description: Optional[str] = ''
     background_story: Optional[str] = ''
 
-    traits: Optional[List[TraitDto]] = None
-    speakings: Optional[List[SpeakingDto]] = None
-    distinct: Optional[List[DistinctiveDto]] = None
+    trait: Optional[List[TraitDto]] = None
+    speak: Optional[List[SpeakingDto]] = None
+    distinctive: Optional[List[DistinctiveDto]] = None
 
 
-# 返回角色信息
-class ResponseCharacterDto(BaseModel):
+# 角色信息
+class CharacterDto(BaseModel):
     id: int
     avatar: Optional[str] = ''
     name: str
     description: Optional[str] = ''
     background_story: Optional[str] = ''
 
-    traits: Optional[List[TraitDto]] = None
-    speakings: Optional[List[SpeakingDto]] = None
-    distinct: Optional[List[DistinctiveDto]] = None
+    trait: Optional[List[TraitDto]] = None
+    speak: Optional[List[SpeakingDto]] = None
+    distinctive: Optional[List[DistinctiveDto]] = None
+
+
+# 返回角色信息
+class ResponseCharacterDto(CharacterDto):
+    pass
+
+
+# 更新角色信息
+class UpdateCharacterDto(CharacterDto):
+    pass
