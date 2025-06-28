@@ -21,7 +21,18 @@ export interface CharacterCard {
   description?: string;
   background_story?: string;
 
-  traits?: Trait[];
-  speakings?: Speaking[];
-  distinct?: Distinctive[];
+  trait?: Trait[];
+  speak?: Speaking[];
+  distinctive?: Distinctive[];
+}
+
+export interface CreateCharacterDto {
+  avatar?: string;
+  name?: string;
+  description?: string;
+  background_story?: string;
+
+  trait?: Trait[];
+  speak?: Speaking[];
+  distinctive?: Distinctive[];
 }

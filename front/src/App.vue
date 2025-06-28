@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import Sidebar from './components/Sidebar.vue'
+import Sidebar from './components/utils/Sidebar.vue'
 
 
 const sidebarOpen = ref(false)
@@ -8,7 +8,8 @@ const customMenuItems = ref([
   { id: 1, text: '首页', href: '/', icon: '🏠' },
   { id: 2, text: '角色信息', href: '/characters', icon: '👤' },
   { id: 3, text: '创建角色', href: '/character/create', icon: '➕' },
-  { id: 4, text: '聊天', href: '/chatting', icon: '💬' }
+  { id: 4, text: '小说信息', href: '/novels', icon: '📖' },
+  { id: 5, text: '创建小说', href: '/novel/create', icon: '➕' },
 ])
 </script>
 

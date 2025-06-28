@@ -43,17 +43,17 @@ const handleClose = () => {
     <div v-if="visible" class="dialog-overlay">
       <div class="dialog">
         <div class="dialog-header">
-          <h3>{{ title }}</h3>
+          <h3>{{ props.title }}</h3>
         </div>
         <div class="dialog-body">
-          <p>{{ message }}</p>
+          <p>{{ props.message }}</p>
         </div>
         <div class="dialog-footer">
           <button class="btn btn-cancel" @click="handleCancel">
-            {{ cancelText || '取消' }}
+            {{ props.cancelText || '取消' }}
           </button>
           <button class="btn btn-confirm" @click="handleConfirm">
-            {{ confirmText || '确认' }}
+            {{ props.confirmText || '确认' }}
           </button>
         </div>
       </div>

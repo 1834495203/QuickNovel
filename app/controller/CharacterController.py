@@ -66,7 +66,7 @@ def delete_character(
 
 
 @character_router.post("/{character_id}/avatar")
-def update_avatar(character_id: int,
+async def update_avatar(character_id: int,
                   avatar: UploadFile = File(...),
                   character_service: CharacterService = Depends(get_character_service)) -> ResponseModel:
     """
@@ -76,7 +76,7 @@ def update_avatar(character_id: int,
     :param character_service: service
     :return: resp
     """
-    return character_service.update_avatar(character_id, avatar)
+    return await character_service.update_avatar(character_id, avatar)
 
 
 @character_router.post("/{character_id}")

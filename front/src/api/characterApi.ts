@@ -1,6 +1,6 @@
 import type { AxiosResponse } from 'axios';
 import apiClient from '../axios/axios'; // 从 ../axios/axios.ts 导入配置好的 axios 实例
-import type { CharacterCard } from '../entity/CharacterEntity';
+import type { CharacterCard, CreateCharacterDto } from '../entity/CharacterEntity';
 import type { ResponseModel } from '../entity/ResponseEntity';
 import { showNotifyResp } from '../utils/notify'; // 导入通知函数
 
@@ -25,21 +25,28 @@ export const getCharacterById = async (characterId: number | string): Promise<Ch
   return responseData.data.data;
 };
 
-export const createCharacter = async (character: CharacterCard): Promise<CharacterCard> => {
+export const createCharacter = async (character: CreateCharacterDto): Promise<CharacterCard> => {
   // 假设后端在成功创建后，在 ResponseModel.data 中返回 CharacterCard
   const responseData = await apiClient.post<CharacterCard>(`${CHARACTER_API_BASE_PATH}/`, character);
   return responseData.data;
 };
 
-export const updateCharacterById = async (characterId: number, character: CharacterCard, avatar: File | null): Promise<ResponseModel> => {
+export const updateCharacterById = async (characterId: number, character: CharacterCard): Promise<ResponseModel> => {
   // 使用 FormData 发送 character 和 avatar
+  const responseData = await apiClient.post<ResponseModel>(
+    `${CHARACTER_API_BASE_PATH}/${characterId}`, character
+  );
+  showNotifyResp(responseData.data); // 显示通知
+  return responseData.data;
+};
+
+export const updateCharacterAvatarById = async (characterId: number, avatar: File): Promise<ResponseModel> => {
+  // 使用 FormData 发送 avatar
   const formData = new FormData();
-  formData.append('character', JSON.stringify(character));
-  if (avatar) {
-    formData.append('uploadFile', avatar);
-  }
-  const responseData = await apiClient.put<ResponseModel>(
-    `${CHARACTER_API_BASE_PATH}/${characterId}`,
+  formData.append('avatar', avatar);
+
+  const responseData = await apiClient.post<ResponseModel>(
+    `${CHARACTER_API_BASE_PATH}/${characterId}/avatar`,
     formData,
     {
       headers: {

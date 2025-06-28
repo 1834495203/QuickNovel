@@ -1,4 +1,3 @@
-import logging
 import os
 from abc import ABC
 
@@ -8,6 +7,9 @@ from core.entity.dto.CharacterDto import *
 from core.entity.po.CharacterEntity import *
 from core.mapper.config.CreateDatabase import generate_table_mapping
 from core.utils.CustomizeException import NotFoundError, DatabaseError, FileError
+from core.utils.LogConfig import get_logger
+
+logging = get_logger(__name__)
 
 
 class CharacterMapperInterface(ABC):
@@ -61,7 +63,7 @@ class CharacterMapper(CharacterMapperInterface):
                     reply=speaking_dto.reply,
                     character=c
                 )
-                c.speaking.add(speaking)
+                c.speak.add(speaking)
 
         # 处理 distinctive
         if character.distinctive:
@@ -82,7 +84,7 @@ class CharacterMapper(CharacterMapperInterface):
 
     @db_session
     def update_avatar(self, character_id, avatar) -> bool:
-        character = self.select_character_by_id(character_id)
+        character = self._select_character_by_id(character_id)
         if character.avatar and os.path.exists(avatar):
             # 删除旧头像
             try:
@@ -99,15 +101,7 @@ class CharacterMapper(CharacterMapperInterface):
     def update_character(self, update_character: CharacterDto):
         character_id = update_character.id
         # 查询角色并预加载关联数据
-        character = CharacterEntity.select(lambda data: data.character_id == character_id).prefetch(
-            CharacterEntity.trait,
-            CharacterEntity.speak,
-            CharacterEntity.distinctive
-        ).get()
-
-        if not character:
-            logging.warning(f"角色 ID {character_id} 不存在")
-            raise NotFoundError(character_id)
+        character = self._select_character_by_id(character_id)
 
         # 更新角色基本信息
         character.avatar = update_character.avatar
@@ -165,6 +159,8 @@ class CharacterMapper(CharacterMapperInterface):
             CharacterEntity.distinctive
         )[:]
 
+        logging.info("获取所有角色成功")
+
         # 转换为 ResponseCharacterDto 列表
         result = []
         for character in characters:
@@ -172,19 +168,19 @@ class CharacterMapper(CharacterMapperInterface):
             traits = [
                 TraitDto(label=t.label, description=t.description)
                 for t in character.trait
-            ] if character.trait else None
+            ] if character.trait else []
 
             # 转换 speak
             speakings = [
                 SpeakingDto(role=s.role, content=s.content, reply=s.reply)
                 for s in character.speak
-            ] if character.speak else None
+            ] if character.speak else []
 
             # 转换 distinctive
             distinctive = [
                 DistinctiveDto(name=d.name, content=d.content)
                 for d in character.distinctive
-            ] if character.distinctive else None
+            ] if character.distinctive else []
 
             # 创建 ResponseCharacterDto 实例
             character_dto = ResponseCharacterDto(
@@ -215,21 +211,27 @@ class CharacterMapper(CharacterMapperInterface):
         return True
 
     @db_session
+    def _select_character_by_id(self, character_id: int) -> CharacterEntity:
+        # 查询角色并预加载关联数据
+        character = CharacterEntity.select(lambda data: data.character_id == character_id).prefetch(
+            CharacterEntity.trait,
+            CharacterEntity.speak,
+            CharacterEntity.distinctive
+        ).get()
+
+        if not character:
+            logging.warning(f"角色 ID {character_id} 不存在")
+            raise NotFoundError(character_id)
+        return character
+
+    @db_session
     def select_character_by_id(self, character_id: int) -> ResponseCharacterDto:
         """
                 根据 character_id 查询角色及其关联数据，并返回 ResponseCharacterDto
                 """
         try:
             # 查询角色并预加载关联数据
-            character = CharacterEntity.select(lambda data: data.character_id == character_id).prefetch(
-                CharacterEntity.trait,
-                CharacterEntity.speak,
-                CharacterEntity.distinctive
-            ).get()
-
-            if not character:
-                logging.warning(f"角色 ID {character_id} 不存在")
-                raise NotFoundError(character_id)
+            character = self._select_character_by_id(character_id)
 
             # 转换为 ResponseCharacterDto
             return ResponseCharacterDto(

@@ -1,6 +1,6 @@
 // notify.ts
 import { createApp, h } from 'vue'
-import Notify from '../components/Notify.vue'
+import Notify from '../components/utils/Notify.vue'
 import type { ResponseModel } from '../entity/ResponseEntity'
 
 interface NotifyOptions {

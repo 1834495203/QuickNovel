@@ -8,7 +8,9 @@ from fastapi import UploadFile
 from core.entity.ResponseEntity import ResponseModel, success, warning
 from core.entity.dto.CharacterDto import CreateCharacterDto, ResponseCharacterDto, UpdateCharacterDto
 from core.mapper.CharacterMapper import CharacterMapperInterface
+from core.utils.LogConfig import get_logger
 
+logging = get_logger(__name__)
 
 class CharacterService:
 
@@ -26,7 +28,7 @@ class CharacterService:
 
     def create_character(self, character: CreateCharacterDto) -> ResponseModel:
         character_id = self.character_mapper.create_character(character)
-        return success(f"创建角色成功, 角色id为{character_id}")
+        return success(message=f"创建角色成功, 角色id为{character_id}")
 
     def select_character_by_id(self, character_id: int) -> ResponseModel[ResponseCharacterDto]:
         character = self.character_mapper.select_character_by_id(character_id)
@@ -39,28 +41,32 @@ class CharacterService:
     def delete_character(self, character_id: int) -> ResponseModel:
         is_delete = self.character_mapper.delete_character_by_id(character_id)
         if is_delete:
-            return success(f"成功删除角色id为{character_id}的角色")
+            return success(message=f"成功删除角色id为{character_id}的角色")
         return warning(message=f"删除角色id为{character_id}的角色失败")
 
     def update_character(self, character: UpdateCharacterDto) -> ResponseModel:
         is_update = self.character_mapper.update_character(character)
         if is_update:
-            return success(f"成功更新角色id为{character.id}的角色")
+            return success(message=f"成功更新角色id为{character.id}的角色")
         return warning(message=f"更新角色id为{character.id}的角色失败")
 
-    def update_avatar(self, character_id: int, avatar_file: UploadFile) -> ResponseModel:
+    async def update_avatar(self, character_id: int, avatar_file: UploadFile) -> ResponseModel:
         # 验证文件扩展名
         if not self.validate_file_extension(avatar_file.filename):
             raise ValueError("不支持的文件格式，仅允许 PNG、JPG、JPEG")
+
+        logging.info(f"上传文件名为 {avatar_file.filename}")
 
         # 生成唯一文件名
         file_extension = Path(avatar_file.filename).suffix.lower()
         unique_filename = f"character_{character_id}_{uuid.uuid4()}{file_extension}"
         file_path = self.UPLOAD_DIR / unique_filename
 
-        # 保存文件
+        logging.info(f"上传文件保存路径为 {file_path}")
+
+        # 异步保存文件
         try:
-            with file_path.open("wb") as buffer:
+            async with file_path.open("wb") as buffer:
                 shutil.copyfileobj(avatar_file.file, buffer)
         except Exception as e:
             raise ValueError(f"文件保存失败: {str(e)}")
@@ -69,5 +75,5 @@ class CharacterService:
 
         is_update = self.character_mapper.update_avatar(character_id, avatar_name)
         if is_update:
-            return success("上传头像成功")
+            return success(message="上传头像成功")
         return warning(message="上传头像失败")

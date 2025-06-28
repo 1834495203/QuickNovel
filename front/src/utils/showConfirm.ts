@@ -1,5 +1,5 @@
 import { createApp, h } from 'vue'
-import ConfirmDialog from '../components/ConfirmDialog.vue'
+import ConfirmDialog from '../components/utils/ConfirmDialog.vue'
 
 interface ConfirmOptions {
   title: string
