@@ -2,7 +2,6 @@ import uuid
 from pathlib import Path
 from typing import List
 
-import aiofiles
 from fastapi import UploadFile
 
 from core.entity.ResponseEntity import ResponseModel, success, warning
@@ -11,6 +10,7 @@ from core.mapper.CharacterMapper import CharacterMapperInterface
 from core.utils.LogConfig import get_logger
 
 logging = get_logger(__name__)
+
 
 class CharacterService:
 
@@ -64,7 +64,7 @@ class CharacterService:
 
         logging.info(f"上传文件保存路径为 {file_path}")
 
-        # 异步保存文件
+        # 保存文件
         try:
             with open(file_path, "wb") as buffer:
                 content = await avatar_file.read()

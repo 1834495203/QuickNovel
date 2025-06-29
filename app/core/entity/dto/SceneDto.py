@@ -1,7 +1,9 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel
+
+from core.entity.dto.ConversationDto import ResponseConversationDto
 
 
 class CreateSceneDto(BaseModel):
@@ -19,3 +21,5 @@ class ResponseSceneDto(BaseModel):
     create_time: datetime
     parent: Optional[int]
     chapter: Optional[int]
+
+    conversation: Optional[List[ResponseConversationDto]] = []
