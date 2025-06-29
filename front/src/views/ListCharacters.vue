@@ -1,373 +1,395 @@
-<script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import type { CharacterCard } from '../entity/CharacterEntity.ts';
-import CharacterInfo from '../components/CharacterInfo.vue';
-import { getAllCharacters } from '../api/characterApi.ts';
+<script lang="ts" setup>
+import { onMounted, ref } from 'vue';
+import type { CharacterCard } from '../entity/CharacterEntity';
+import { getAllCharacters, updateCharacterById, deleteCharacterById, updateCharacterAvatarById } from '../api/characterApi';
+import { ElMessage, ElMessageBox, type UploadProps } from 'element-plus';
+import { Plus, Delete } from '@element-plus/icons-vue';
+import { baseURL } from '../axios/axios';
 
-const characterList = ref<CharacterCard[]>([]);
+const characters = ref<CharacterCard[]>([]);
+const editDialogVisible = ref(false);
+const currentCharacter = ref<CharacterCard | null>(null);
 
-onMounted(async () => {
-  const characters = await getAllCharacters();
-  console.log('characters', characters);
-  characterList.value.push(...characters);
-});
-
-const handleCharacterUpdated = async () => {
-  // 更新父组件的 character 数据
-  characterList.value = await getAllCharacters();
+const fetchCharacters = async () => {
+  try {
+    characters.value = await getAllCharacters();
+    console.log('Fetched characters:', characters.value);
+  } catch (error) {
+    console.error('Failed to fetch characters:', error);
+    ElMessage.error('获取角色列表失败。');
+  }
 };
 
+onMounted(fetchCharacters);
 
+const handleEdit = (character: CharacterCard) => {
+  // 使用深拷贝以避免在保存前修改原始数据，并确保数组存在
+  const characterCopy = JSON.parse(JSON.stringify(character));
+  characterCopy.trait = characterCopy.trait || [];
+  characterCopy.speak = characterCopy.speak || [];
+  characterCopy.distinctive = characterCopy.distinctive || [];
+  currentCharacter.value = characterCopy;
+  editDialogVisible.value = true;
+};
+
+const handleUpdate = async () => {
+  if (!currentCharacter.value) return;
+  try {
+    await updateCharacterById(currentCharacter.value.id, currentCharacter.value);
+    editDialogVisible.value = false;
+    ElMessage.success('角色更新成功。');
+    await fetchCharacters(); // 刷新列表
+  } catch (error) {
+    console.error('Failed to update character:', error);
+    ElMessage.error('角色更新失败。');
+  }
+};
+
+const handleDelete = async (characterId: number) => {
+  try {
+    await ElMessageBox.confirm(
+      '此操作将永久删除该角色，是否继续？',
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    );
+    await deleteCharacterById(characterId);
+    ElMessage.success('删除成功。');
+    await fetchCharacters(); // 刷新列表
+  } catch {
+    ElMessage.info('已取消删除。');
+  }
+};
+
+const handleAvatarUpload: UploadProps['httpRequest'] = async (options) => {
+  if (!currentCharacter.value) return;
+  try {
+    await updateCharacterAvatarById(currentCharacter.value.id, options.file);
+    ElMessage.success('头像更新成功。');
+    // 刷新角色数据以获取新的头像URL
+    const characterInDialogId = currentCharacter.value.id;
+    await fetchCharacters();
+    const updatedChar = characters.value.find(c => c.id === characterInDialogId);
+    if (updatedChar) {
+        currentCharacter.value = { ...updatedChar };
+    }
+  } catch (error) {
+    console.error('Failed to upload avatar:', error);
+    ElMessage.error('头像上传失败。');
+  }
+};
+
+// Trait helpers
+const addTrait = () => {
+  currentCharacter.value?.trait?.push({ label: '', description: '' });
+};
+const removeTrait = (index: number) => {
+  currentCharacter.value?.trait?.splice(index, 1);
+};
+
+// Speak helpers
+const addSpeak = () => {
+  currentCharacter.value?.speak?.push({ role: '', content: '', reply: '' });
+};
+const removeSpeak = (index: number) => {
+  currentCharacter.value?.speak?.splice(index, 1);
+};
+
+// Distinctive helpers
+const addDistinctive = () => {
+  currentCharacter.value?.distinctive?.push({ name: '', content: '' });
+};
+const removeDistinctive = (index: number) => {
+  currentCharacter.value?.distinctive?.splice(index, 1);
+};
 </script>
 
 <template>
-  <div class="character-list-container">
-    <div v-for="character in characterList" :key="character.id">
-      <CharacterInfo :character="character" @character-updated="handleCharacterUpdated">
-        <template #header-content="{ character: slotCharacter, isEditing }">
-          <div v-if="!isEditing" style="flex-grow: 1;">
-            <h2>{{ slotCharacter?.name }}</h2>
-          </div>
-          <div v-if="isEditing && slotCharacter" style="flex-grow: 1;">
-            <input type="text" v-model="slotCharacter.name" placeholder="角色名称" class="form-input" />
-          </div>
-        </template>
+  <div class="container">    
+    <el-row :gutter="20">
+      <el-col :xs="24" :sm="12" :md="8" :lg="6" v-for="character in characters" :key="character.id">
+        <el-card class="character-card">
+          <template #header>
+            <div class="card-header">
+              <span>{{ character.name }}</span>
+            </div>
+          </template>
+          <el-image :src="`${baseURL}/uploads/avatars/${character.avatar}`" fit="cover" class="avatar-image">
+            <template #error>
+              <div class="image-slot">
+                <img src="../assets/header.png" alt="default avatar" class="default-avatar" />
+              </div>
+            </template>
+          </el-image>
+          <p class="character-desc">{{ character.description }}</p>
 
-        <template #header-actions="{ isEditing, startEdit, startChat }">
-          <button v-if="!isEditing" @click.stop="startChat" class="chat-button">聊天</button>
-          <button v-if="!isEditing" @click.stop="startEdit" class="edit-button">编辑</button>
-        </template>
+          <el-collapse class="details-collapse">
+            <el-collapse-item title="查看详情" name="1">
+              <div v-if="character.background_story">
+                <h4>背景故事</h4>
+                <p class="detail-content">{{ character.background_story }}</p>
+              </div>
 
-        <template #description="{ character: slotCharacter, isEditing }">
-          <div v-if="!isEditing">
-            <p class="description-preview"><strong>描述:</strong> {{ slotCharacter?.description }}</p>
-          </div>
-          <div v-if="isEditing && slotCharacter">
-            <strong>描述:</strong>
-            <textarea v-model="slotCharacter.description" placeholder="角色描述" class="form-textarea"></textarea>
-          </div>
-        </template>
+              <div v-if="character.trait && character.trait.length > 0">
+                <h4>特征 (Trait)</h4>
+                <ul class="detail-list">
+                  <li v-for="(t, i) in character.trait" :key="`trait-${i}`">
+                    <strong>{{ t.label }}:</strong> {{ t.description }}
+                  </li>
+                </ul>
+              </div>
 
-        <template #details="{ character: slotCharacter, isEditing, addTrait, removeTrait, addSpeakingStyle, removeSpeakingStyle, addCustomField, removeCustomField }">
-          <!-- Personality Traits -->
-          <div v-if="!isEditing && slotCharacter && slotCharacter.trait">
-            <h3>性格特点:</h3>
-            <ul>
-              <li v-for="(trait, index) in slotCharacter.trait" :key="index" class="trait-list-item">
-                <div class="trait-label"><strong>{{ trait.label }}</strong></div>
-                <div class="trait-description-text">{{ trait.description }}</div>
-              </li>
-            </ul>
-          </div>
-          <div v-if="isEditing && slotCharacter">
-            <h3>性格特点:</h3>
-            <ul v-if="slotCharacter && slotCharacter.trait">
-              <li v-for="(trait, index) in slotCharacter.trait" :key="`trait-${index}`"
-                class="trait-list-item-edit">
-                <input type="text" v-model="trait.label" placeholder="特点标签" class="form-input" />
-                <textarea v-model="trait.description" placeholder="特点描述" class="form-textarea"></textarea>
-                <button @click="removeTrait(index)" class="remove-button">移除特点</button>
-              </li>
-            </ul>
-            <button @click="addTrait" class="add-button">添加特点</button>
-          </div>
+              <div v-if="character.speak && character.speak.length > 0">
+                <h4>说话方式 (Speak)</h4>
+                <ul class="detail-list">
+                  <li v-for="(s, i) in character.speak" :key="`speak-${i}`">
+                    <strong>{{ s.role }}:</strong> "{{ s.content }}" (回应: {{ s.reply }})
+                  </li>
+                </ul>
+              </div>
 
-          <!-- Background Story (View Mode) -->
-          <div v-if="!isEditing && slotCharacter && slotCharacter.background_story">
-            <h3>背景故事:</h3>
-            <p>{{ slotCharacter.background_story }}</p>
-          </div>
-          <!-- Background Story (Edit Mode) -->
-          <div v-if="isEditing && slotCharacter && slotCharacter.background_story !== undefined">
-            <h3>背景故事:</h3>
-            <textarea v-model="slotCharacter.background_story" placeholder="背景故事"
-              class="form-textarea"></textarea>
-          </div>
+              <div v-if="character.distinctive && character.distinctive.length > 0">
+                <h4>显著特点 (Distinctive)</h4>
+                <ul class="detail-list">
+                  <li v-for="(d, i) in character.distinctive" :key="`distinctive-${i}`">
+                    <strong>{{ d.name }}:</strong> {{ d.content }}
+                  </li>
+                </ul>
+              </div>
+              <div v-if="!character.background_story && (!character.trait || character.trait.length === 0) && (!character.speak || character.speak.length === 0) && (!character.distinctive || character.distinctive.length === 0)">
+                <p>暂无更多详细信息。</p>
+              </div>
+            </el-collapse-item>
+          </el-collapse>
 
-          <!-- Speaking Style (View Mode) -->
-          <div
-            v-if="!isEditing && slotCharacter && slotCharacter.speak && slotCharacter.speak.length > 0">
-            <h3>说话风格:</h3>
-            <ul>
-              <li v-for="(style, index) in slotCharacter.speak" :key="`style-view-${index}`">
-                <p><strong>角色:</strong> {{ style.role }}</p>
-                <p><strong>内容:</strong> {{ style.content }}</p>
-                <p><strong>回复:</strong> {{ style.reply }}</p>
-              </li>
-            </ul>
+          <div class="card-footer">
+            <el-button type="primary" size="small" @click="handleEdit(character)">编辑</el-button>
+            <el-button type="danger" size="small" @click="handleDelete(character.id)">删除</el-button>
           </div>
-          <!-- Speaking Style (Edit Mode) -->
-          <div v-if="isEditing && slotCharacter && slotCharacter.speak">
-            <h3>说话风格:</h3>
-            <ul v-if="slotCharacter.speak">
-              <li v-for="(style, index) in slotCharacter.speak" :key="`style-edit-${index}`"
-                class="list-item-edit">
-                <input type="text" v-model="style.role" placeholder="角色" class="form-input" />
-                <textarea v-model="style.content" placeholder="内容" class="form-textarea"></textarea>
-                <textarea v-model="style.reply" placeholder="回复" class="form-textarea"></textarea>
-                <button @click="removeSpeakingStyle(index)" class="remove-button">移除风格</button>
-              </li>
-            </ul>
-            <button @click="addSpeakingStyle" class="add-button">添加说话风格</button>
-          </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
-          <!-- Custom Fields (View Mode) -->
-          <div
-            v-if="!isEditing && slotCharacter && slotCharacter.distinctive && slotCharacter.distinctive.length > 0">
-            <h3>自定义字段:</h3>
-            <ul>
-              <li v-for="(field, index) in slotCharacter.distinctive" :key="`field-view-${index}`">
-                <strong>{{ field.name }}:</strong> {{ field.content }}
-              </li>
-            </ul>
-          </div>
-          <!-- Custom Fields (Edit Mode) -->
-          <div v-if="isEditing && slotCharacter && slotCharacter.distinctive">
-            <h3>自定义字段:</h3>
-            <ul v-if="slotCharacter.distinctive">
-              <li v-for="(field, index) in slotCharacter.distinctive" :key="`field-edit-${index}`"
-                class="list-item-edit">
-                <input type="text" v-model="field.name" placeholder="字段名称" class="form-input" />
-                <input type="text" v-model="field.content" placeholder="字段值" class="form-input" />
-                <button @click="removeCustomField(index)" class="remove-button">移除字段</button>
-              </li>
-            </ul>
-            <button @click="addCustomField" class="add-button">添加自定义字段</button>
-          </div>
-        </template>
+    <el-dialog v-model="editDialogVisible" title="编辑角色" width="80%" @closed="currentCharacter = null">
+      <el-form v-if="currentCharacter" :model="currentCharacter" label-position="top">
+        <el-tabs type="border-card">
+          <el-tab-pane label="基本信息">
+            <el-row :gutter="20">
+              <el-col :span="8">
+                <el-form-item label="头像">
+                  <el-upload
+                    class="avatar-uploader"
+                    action="#"
+                    :show-file-list="false"
+                    :http-request="handleAvatarUpload"
+                  >
+                    <img 
+                    v-if="currentCharacter.avatar" 
+                    :src="`${baseURL}/uploads/avatars/${currentCharacter.avatar}`" class="avatar" />
+                    <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+                    <template #tip>
+                        <div class="el-upload__tip">
+                        点击上传新头像。
+                        </div>
+                    </template>
+                  </el-upload>
+                </el-form-item>
+              </el-col>
+              <el-col :span="16">
+                <el-form-item label="名称">
+                  <el-input v-model="currentCharacter.name"></el-input>
+                </el-form-item>
+                <el-form-item label="简短描述">
+                  <el-input type="textarea" :rows="4" v-model="currentCharacter.description"></el-input>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-tab-pane>
 
-        <template #edit-actions="{ confirmEdit, cancelEdit, deleteCharacter }">
-          <button @click="confirmEdit" class="confirm-button">确认</button>
-          <button @click="cancelEdit" class="cancel-button">取消</button>
-          <button @click="deleteCharacter" class="delete-button">删除</button>
-        </template>
-      </CharacterInfo>
-    </div>
+          <el-tab-pane label="背景故事">
+            <el-form-item label="详细背景故事">
+              <el-input type="textarea" :rows="10" v-model="currentCharacter.background_story"></el-input>
+            </el-form-item>
+          </el-tab-pane>
+
+          <el-tab-pane label="特征 (Trait)">
+            <div v-for="(t, index) in currentCharacter.trait" :key="index" class="dynamic-form-item">
+              <el-row :gutter="20" align="middle">
+                <el-col :span="8"><el-input v-model="t.label" placeholder="标签 (如：性格)"></el-input></el-col>
+                <el-col :span="14"><el-input v-model="t.description" placeholder="描述 (如：勇敢、善良)"></el-input></el-col>
+                <el-col :span="2"><el-button type="danger" @click="removeTrait(index)" :icon="Delete" circle></el-button></el-col>
+              </el-row>
+            </div>
+            <el-button @click="addTrait" type="primary" plain>添加特征</el-button>
+          </el-tab-pane>
+
+          <el-tab-pane label="说话方式 (Speak)">
+            <div v-for="(s, index) in currentCharacter.speak" :key="index" class="dynamic-form-item">
+              <el-row :gutter="20" align="middle">
+                <el-col :span="6"><el-input v-model="s.role" placeholder="角色/场景"></el-input></el-col>
+                <el-col :span="8"><el-input v-model="s.content" placeholder="内容/口头禅"></el-input></el-col>
+                <el-col :span="8"><el-input v-model="s.reply" placeholder="回应方式"></el-input></el-col>
+                <el-col :span="2"><el-button type="danger" @click="removeSpeak(index)" :icon="Delete" circle></el-button></el-col>
+              </el-row>
+            </div>
+            <el-button @click="addSpeak" type="primary" plain>添加说话方式</el-button>
+          </el-tab-pane>
+
+          <el-tab-pane label="显著特点 (Distinctive)">
+            <div v-for="(d, index) in currentCharacter.distinctive" :key="index" class="dynamic-form-item">
+              <el-row :gutter="20" align="middle">
+                <el-col :span="8"><el-input v-model="d.name" placeholder="特点名称 (如：外貌)"></el-input></el-col>
+                <el-col :span="14"><el-input v-model="d.content" placeholder="具体内容 (如：金发碧眼)"></el-input></el-col>
+                <el-col :span="2"><el-button type="danger" @click="removeDistinctive(index)" :icon="Delete" circle></el-button></el-col>
+              </el-row>
+            </div>
+            <el-button @click="addDistinctive" type="primary" plain>添加显著特点</el-button>
+          </el-tab-pane>
+        </el-tabs>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleUpdate">保存</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <style scoped>
-.character-list-container {
+.container {
+  padding: 20px;
+}
+
+h1 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+p {
+  margin: 5px 0;
+  color: #606266;
+}
+
+.character-card {
+  margin-bottom: 20px;
+}
+
+.card-header {
+  font-weight: bold;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 200px;
+  background-color: #f5f7fa;
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px; /* Adjust gap between cards */
-  padding: 16px;
-  justify-content: center; /* Center cards if they don't fill the row */
+  justify-content: center;
+  align-items: center;
 }
 
-:deep(h2) {
-  margin-top: 0;
-  margin-bottom: 0;
-  color: #333;
-  font-size: 1.2em;
-  flex-grow: 1;
+.image-slot {
+    width: 100%;
+    height: 100%;
 }
 
-:deep(.chat-button) {
-  background: none;
-  border: 1px solid #17a2b8;
-  color: #17a2b8;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8em;
-  margin-left: 8px;
-  white-space: nowrap;
+.default-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-:deep(.edit-button) {
-  background: none;
-  border: 1px solid #28a745;
-  color: #28a745;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8em;
-  margin-left: 8px;
-  white-space: nowrap;
-}
-
-:deep(.edit-button:hover) {
-  background-color: #28a745;
-  color: white;
-}
-
-:deep(.description-preview) {
-  font-size: 0.9em;
-  color: #555;
-  line-height: 1.4;
-  margin-bottom: 12px;
+.character-desc {
+  font-size: 14px;
+  color: #606266;
+  min-height: 63px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  /* -webkit-line-clamp: 3; */
   -webkit-box-orient: vertical;
-  flex-grow: 1;
-  min-height: calc(1.4em * 3);
+  margin-top: 10px;
 }
 
-:deep(h3) {
-  margin-top: 1em;
-  margin-bottom: 0.5em;
-  color: #555;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.25em;
-  font-size: 1.1em;
+.details-collapse {
+  margin-top: 15px;
 }
 
-:deep(ul) {
-  list-style-type: none;
-  padding-left: 0;
-}
-
-:deep(li) {
-  margin-bottom: 0.75em;
-  padding: 10px;
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  border-left: 4px solid #007bff;
-}
-
-:deep(.trait-label) {
+.details-collapse h4 {
+  font-size: 15px;
   font-weight: bold;
-  color: #333;
-  margin-bottom: 4px;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  color: #303133;
 }
 
-:deep(.trait-description-text) {
-  font-size: 0.9em;
-  color: #555;
-  padding-left: 8px;
+.details-collapse h4:first-child {
+  margin-top: 0;
+}
+
+.detail-content {
+  white-space: pre-wrap;
+  font-size: 14px;
+  color: #606266;
   line-height: 1.5;
 }
 
-:deep(.form-input),
-:deep(.form-textarea) {
-  width: calc(100% - 16px);
-  padding: 8px;
-  margin-bottom: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 0.9em;
-  box-sizing: border-box;
+.detail-list {
+  list-style-type: none;
+  padding-left: 0;
+  font-size: 14px;
+  color: #606266;
 }
 
-:deep(.form-textarea) {
-  min-height: 60px;
-  resize: vertical;
+.detail-list li {
+  margin-bottom: 5px;
+  padding-left: 10px;
+  border-left: 2px solid #e4e7ed;
 }
 
-:deep(.trait-list-item-edit),
-:deep(.list-item-edit) {
+.card-footer {
+  margin-top: 15px;
+  text-align: right;
+}
+
+.avatar-uploader .avatar {
+  width: 120px;
+  height: 120px;
+  display: block;
+}
+
+.dynamic-form-item {
   padding: 10px;
-  background-color: #f0f0f0;
+  margin-bottom: 10px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+}
+</style>
+
+<style>
+/* Global style for el-upload */
+.avatar-uploader .el-upload {
+  border: 1px dashed var(--el-border-color);
   border-radius: 6px;
-  margin-bottom: 10px;
-  border-left: 4px solid #ffc107;
-}
-
-:deep(.trait-list-item-edit .form-input),
-:deep(.trait-list-item-edit .form-textarea),
-:deep(.list-item-edit .form-input),
-:deep(.list-item-edit .form-textarea) {
-  width: 100%;
-}
-
-:deep(.remove-button) {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8em;
-  margin-left: 5px;
-  display: block;
-  margin-top: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--el-transition-duration-fast);
 }
 
-:deep(.add-button) {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8em;
-  margin-top: 10px;
-  display: block;
-  margin-bottom: 10px;
+.avatar-uploader .el-upload:hover {
+  border-color: var(--el-color-primary);
 }
 
-:deep(.remove-button:hover) {
-  background-color: #c82333;
-}
-
-:deep(.add-button:hover) {
-  background-color: #0056b3;
-}
-
-:deep(.confirm-button),
-:deep(.cancel-button) {
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9em;
-  margin-left: 8px;
-}
-
-:deep(.confirm-button) {
-  background-color: #28a745;
-  color: white;
-  border: 1px solid #28a745;
-}
-
-:deep(.confirm-button:hover) {
-  background-color: #218838;
-}
-
-:deep(.cancel-button) {
-  background-color: #6c757d;
-  color: white;
-  border: 1px solid #6c757d;
-}
-
-:deep(.cancel-button:hover) {
-  background-color: #5a6268;
-}
-
-:deep(.delete-button) {
-  background-color: #dc3545;
-  color: white;
-  border: 1px solid #dc3545;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9em;
-  margin-left: 8px;
-}
-
-:deep(.delete-button:hover) {
-  background-color: #c82333;
-}
-
-@media (max-width: 480px) {
-  :deep(h2) {
-    font-size: 1.1em;
-  }
-
-  :deep(.description-preview) {
-    font-size: 0.85em;
-    -webkit-line-clamp: 2;
-    min-height: calc(1.4em * 2);
-  }
-
-  :deep(h3) {
-    font-size: 1em;
-  }
-
-  :deep(li) {
-    padding: 8px;
-  }
+.el-icon.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 120px;
+  height: 120px;
+  text-align: center;
 }
 </style>

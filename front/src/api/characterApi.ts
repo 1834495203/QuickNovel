@@ -12,12 +12,7 @@ const CHARACTER_API_BASE_PATH = '/api/character'; // API 的基础路径
 export const getAllCharacters = async (): Promise<CharacterCard[]> => {
   // apiClient.get<T> 中的 T 是期望从拦截器返回的数据类型
   const responseData = await apiClient.get<AxiosResponse<CharacterCard[]>>(`${CHARACTER_API_BASE_PATH}/`);
-  return responseData.data.data.map((char)=>{
-    if (char.avatar === null || char.avatar === undefined) {
-      char.avatar = '../src/assets/header.png'; // 设置默认头像
-    }
-    return char;
-  }); // 返回实际的数据数组
+  return responseData.data.data; // 返回实际的数据数组
 };
 
 export const getCharacterById = async (characterId: number | string): Promise<CharacterCard> => {

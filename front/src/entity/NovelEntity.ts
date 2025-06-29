@@ -9,5 +9,5 @@ export interface NovelEntity {
 
 // 对应后端的ResponseAllNovelDto
 export interface AllNovelDto extends NovelEntity {
-    chapters: AllChapterDto[];
+    chapter: AllChapterDto[];
 }

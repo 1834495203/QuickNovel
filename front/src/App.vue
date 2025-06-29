@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import Sidebar from './components/utils/Sidebar.vue'
+import { useRoute } from 'vue-router'
 
 
 const sidebarOpen = ref(false)
@@ -11,98 +11,57 @@ const customMenuItems = ref([
   { id: 4, text: '小说信息', href: '/novels', icon: '📖' },
   { id: 5, text: '创建小说', href: '/novel/create', icon: '➕' },
 ])
+
+const route = useRoute()
 </script>
 
 <template>
-    <Sidebar 
-      v-model="sidebarOpen"
-      :menu-items="customMenuItems"></Sidebar>
+    <el-drawer v-model="sidebarOpen" title="菜单" direction="ltr" size="280px">
+      <el-menu :default-active="route.path" router @select="sidebarOpen = false">
+        <el-menu-item v-for="item in customMenuItems" :key="item.id" :index="item.href">
+          <span class="menu-icon" v-html="item.icon"></span>
+          <span>{{ item.text }}</span>
+        </el-menu-item>
+      </el-menu>
+    </el-drawer>
 
-  <div id="app">
-    <!-- 内容区域 -->
-    <main class="content">
+  <el-container class="app-container">
+    <el-header class="app-header">
+      <el-button @click="sidebarOpen = !sidebarOpen" icon="Menu" circle />
+      <span style="margin-left: 15px; font-size: 1.2em;">QuickNovel</span>
+    </el-header>
+    <el-main class="app-main">
       <router-view />
-    </main>
-  </div>
+    </el-main>
+  </el-container>
 </template>
 
 <style scoped>
-#app {
-  max-width: 1200px;
-  margin: 0 auto;
+.app-container {
+  min-height: 100vh;
 }
 
-.top-nav {
+.app-header {
   background-color: #f8f9fa;
-  padding: 10px 20px;
   border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
   position: sticky;
   top: 0;
   z-index: 1000;
 }
 
-.nav-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.nav-buttons button {
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.nav-buttons button:hover {
-  background-color: #0056b3;
-}
-
-.nav-buttons button.active {
-  background-color: #0056b3;
-  font-weight: bold;
-}
-
-.breadcrumbs {
-  padding: 10px 20px;
-  background-color: #fff;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.breadcrumb-link {
-  color: #007bff;
-  text-decoration: none;
-}
-
-.breadcrumb-link:hover {
-  text-decoration: underline;
-}
-
-.breadcrumb-current {
-  color: #333;
-  font-weight: bold;
-}
-
-.content {
+.app-main {
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-@media (max-width: 768px) {
-  .nav-buttons {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .nav-buttons button {
-    padding: 6px 12px;
-    font-size: 0.9em;
-  }
-
-  .breadcrumbs {
-    font-size: 0.9em;
-    padding: 8px 15px;
-  }
+.menu-icon {
+  margin-right: 10px;
+  font-size: 1.2rem;
+  width: 24px;
+  text-align: center;
 }
 </style>

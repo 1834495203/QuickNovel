@@ -15,6 +15,16 @@ const routes = [
     path: '/character/create',
     name: 'CharacterCreate',
     component: () => import('../views/CharacterCreate.vue')
+  },
+  {
+    path: '/novels',
+    name: 'novels',
+    component: () => import('../views/ListNovels.vue'),
+  },
+  {
+    path: '/novel/:id',
+    name: 'NovelDetail',
+    component: () => import('../views/NovelDetail.vue')
   }
 ]
 

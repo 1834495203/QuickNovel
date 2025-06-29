@@ -1,8 +1,8 @@
-import shutil
 import uuid
 from pathlib import Path
 from typing import List
 
+import aiofiles
 from fastapi import UploadFile
 
 from core.entity.ResponseEntity import ResponseModel, success, warning
@@ -18,7 +18,7 @@ class CharacterService:
         self.character_mapper = character_mapper
 
         # 配置上传目录
-        self.UPLOAD_DIR = Path("uploads/avatars")
+        self.UPLOAD_DIR = Path("uploads/avatars").absolute()
         self.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         self.ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 
@@ -66,12 +66,17 @@ class CharacterService:
 
         # 异步保存文件
         try:
-            async with file_path.open("wb") as buffer:
-                shutil.copyfileobj(avatar_file.file, buffer)
+            with open(file_path, "wb") as buffer:
+                content = await avatar_file.read()
+                buffer.write(content)
         except Exception as e:
+            logging.error(f"文件保存失败: {str(e)}")
             raise ValueError(f"文件保存失败: {str(e)}")
 
-        avatar_name = f"uploads/avatars/{unique_filename}"
+        if not file_path.exists():
+            raise ValueError(f"文件 {file_path} 保存失败")
+
+        avatar_name = file_path.name
 
         is_update = self.character_mapper.update_avatar(character_id, avatar_name)
         if is_update:

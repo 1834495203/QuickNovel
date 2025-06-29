@@ -20,5 +20,5 @@ export interface CreateChapterDto {
 
 // 对应后端的ResponseAllChapterDto
 export interface AllChapterDto extends ChapterEntity {  
-    scenes: SceneEntity[];
+    scene: SceneEntity[];
 }
