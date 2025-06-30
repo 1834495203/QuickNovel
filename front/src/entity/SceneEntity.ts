@@ -1,3 +1,5 @@
+import type { ConversationEntity } from "./ConversationEntity";
+
 export interface SceneEntity {
     scene_id: number;
     scene_name: string;
@@ -12,4 +14,8 @@ export interface CreateSceneDto {
     scene_desc?: string;
     parent?: number;
     chapter?: number;
+}
+
+export interface AllSceneDto extends SceneEntity {
+    conversation?: ConversationEntity[];
 }

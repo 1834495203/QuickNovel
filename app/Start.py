@@ -9,6 +9,7 @@ from starlette.responses import JSONResponse
 
 from controller.ChapterController import chapter_router
 from controller.CharacterController import character_router
+from controller.ConversationController import conversation_router
 from controller.NovelController import novel_router
 from controller.SceneController import scene_router
 from core.entity.ResponseEntity import error
@@ -53,6 +54,7 @@ app.include_router(character_router)
 app.include_router(chapter_router)
 app.include_router(novel_router)
 app.include_router(scene_router)
+app.include_router(conversation_router)
 
 @app.get("/")
 async def root():

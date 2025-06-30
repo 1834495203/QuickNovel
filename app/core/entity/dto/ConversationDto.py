@@ -9,7 +9,7 @@ class CreateConversationDto(BaseModel):
     sender_character: Optional[int] = None
     receiver_character: Optional[int] = None
     content: str
-    create_time: datetime
+    create_time: Optional[datetime] = None
     parent: Optional[int] = None
     scene: int
 

@@ -9,7 +9,7 @@ from core.entity.dto.SceneDto import ResponseSceneDto
 class CreateChapterDto(BaseModel):
     chapter_title: Optional[str] = ''
     chapter_desc: Optional[str] = ''
-    create_time: datetime
+    create_time: Optional[datetime] = None
     parent: Optional[int] = None
     chapter_number: Optional[int]
     novel: int

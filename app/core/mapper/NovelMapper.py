@@ -80,17 +80,33 @@ class NovelMapper(NovelMapperInterface):
             raise NotFoundError(novel_id)
 
         try:
-            # 构建章节数据
-            chapters = [
-                ResponseAllChapterDto(
-                    chapter_id=chapter.chapter_id,
-                    chapter_number=chapter.chapter_number,
-                    chapter_desc=chapter.chapter_desc,
-                    chapter_title=chapter.chapter_title,
-                    create_time=chapter.create_time,
-                    parent=chapter.parent,
-                    novel=chapter.novel.novel_id,
-                    scene=[
+            # 在这里对获取到的集合进行排序，这是最通用和显式的方式
+            # 即使你在实体中定义了 order_by，你也可以在这里覆盖它
+            sorted_chapters = sorted(novel.chapter, key=lambda ch: ch.chapter_number,
+                                     reverse=False)  # 假设按 chapter_number 升序
+
+            chapters_dto = []
+            for chapter in sorted_chapters:
+                sorted_scenes = sorted(chapter.scene, key=lambda s: s.scene_id, reverse=False)  # 假设按 create_time 降序
+
+                scenes_dto = []
+                for scene in sorted_scenes:
+                    sorted_conversations = sorted(scene.conversation, key=lambda conv: conv.conversation_id,
+                                                  reverse=True)  # 假设按 create_time 降序
+
+                    conversations_dto = [
+                        ResponseConversationDto(
+                            conversation_id=conv.conversation_id,
+                            role=conv.role,
+                            sender_character=conv.sender_character,
+                            receiver_character=conv.receiver_character,
+                            content=conv.content,
+                            create_time=conv.create_time,
+                            parent=conv.parent,
+                            scene=conv.scene.scene_id
+                        ) for conv in sorted_conversations
+                    ]
+                    scenes_dto.append(
                         ResponseSceneDto(
                             scene_id=scene.scene_id,
                             scene_name=scene.scene_name,
@@ -98,29 +114,28 @@ class NovelMapper(NovelMapperInterface):
                             create_time=scene.create_time,
                             parent=scene.parent,
                             chapter=scene.chapter.chapter_id,
-                            conversation=[
-                                ResponseConversationDto(
-                                    conversation_id=conv.conversation_id,
-                                    role=conv.role,
-                                    sender_character=conv.sender_character,
-                                    receiver_character=conv.receiver_character,
-                                    content=conv.content,
-                                    create_time=conv.create_time,
-                                    parent=conv.parent,
-                                    scene=conv.scene.scene_id
-                                )for conv in scene.conversation
-                            ]
-                        )for scene in chapter.scene
-                    ]
-                )for chapter in novel.chapter
-            ]
+                            conversation=conversations_dto
+                        )
+                    )
+                chapters_dto.append(
+                    ResponseAllChapterDto(
+                        chapter_id=chapter.chapter_id,
+                        chapter_number=chapter.chapter_number,
+                        chapter_desc=chapter.chapter_desc,
+                        chapter_title=chapter.chapter_title,
+                        create_time=chapter.create_time,
+                        parent=chapter.parent,
+                        novel=chapter.novel.novel_id,
+                        scene=scenes_dto
+                    )
+                )
 
             return ResponseAllNovelDto(
                 novel_id=novel.novel_id,
                 novel_name=novel.novel_name,
                 novel_desc=novel.novel_desc,
                 create_time=novel.create_time,
-                chapter=chapters
+                chapter=chapters_dto
             )
         except Exception as e:
             logging.error(f"获取小说 ID {novel_id}失败，{str(e)}")

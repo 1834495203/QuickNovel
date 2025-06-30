@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from core.entity.dto.ConversationDto import CreateConversationDto
 from core.mapper.ConversationMapper import ConversationMapper
@@ -16,15 +16,17 @@ def get_conversation_service():
 
 @conversation_router.post("/")
 def create_conversation(
+        request: Request,
         conversation: CreateConversationDto,
         conversation_service: ConversationService = Depends(get_conversation_service)):
     """
     创建对话内容
+    :param request:
     :param conversation: 创建的对话
     :param conversation_service: 对话的服务
     :return: resp
     """
-    return conversation_service.create_conversation(conversation)
+    return conversation_service.create_conversation(request, conversation)
 
 
 @conversation_router.get("/{scene_id}")

@@ -9,7 +9,7 @@ from core.entity.dto.ConversationDto import ResponseConversationDto
 class CreateSceneDto(BaseModel):
     scene_name: str
     scene_desc: Optional[str] = ''
-    create_time: datetime
+    create_time: Optional[datetime] = None
     parent: Optional[int] = None
     chapter: Optional[int] = None
 

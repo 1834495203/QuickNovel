@@ -1,4 +1,4 @@
-import type { SceneEntity } from './SceneEntity';
+import type { AllSceneDto } from './SceneEntity';
 
 export interface ChapterEntity {
     chapter_id: number;
@@ -20,5 +20,5 @@ export interface CreateChapterDto {
 
 // 对应后端的ResponseAllChapterDto
 export interface AllChapterDto extends ChapterEntity {  
-    scene: SceneEntity[];
+    scene: AllSceneDto[];
 }
