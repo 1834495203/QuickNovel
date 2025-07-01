@@ -21,7 +21,6 @@ class ProviderService:
             streaming=streaming,
             temperature=temperature,
             base_url=base_url,
-            api_key="sk-931efacf1be94cd9bf7464ef77d01c10"
         )
 
     async def generate_llm_response(self, prompt: str, novel_id: int = None) -> AsyncGenerator[str, None]:
