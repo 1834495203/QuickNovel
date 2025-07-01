@@ -8,7 +8,7 @@ import { createConversation } from '../api/ConversationApi';
 
 const route = useRoute();
 
-const prompt = ref()
+const prompt = ref('');
 
 const currentNovel = ref<AllNovelDto>();
 
@@ -19,15 +19,63 @@ const fetchNovelById = async (novelId: string) => {
 };
 
 const sendConversation = async () => {
+  if (!currentNovel.value || !prompt.value) {
+    return;
+  }
+
+  const chapters = currentNovel.value.chapter;
+  if (!chapters || chapters.length === 0) {
+    return;
+  }
+  const lastChapter = chapters[chapters.length - 1];
+
+  const scenes = lastChapter.scene;
+  if (!scenes || scenes.length === 0) {
+    return;
+  }
+  const lastScene = scenes[scenes.length - 1];
+
+  if (!lastScene.conversation) {
+    lastScene.conversation = [];
+  }
+
+  const userPrompt = prompt.value;
+  prompt.value = '';
+
+  lastScene.conversation.push({
+    role: 'user',
+    content: userPrompt,
+  });
+
+  const assistantResponse = ref({
+    role: 'assistant',
+    content: '',
+  });
+  lastScene.conversation.push(assistantResponse.value);
+
   const createConversationDto = {
     role: 'user',
-    content: prompt.value,
-    scene: currentNovel.value!.chapter[0].scene[0].scene_id
+    content: userPrompt,
+    scene: lastScene.scene_id,
+    novel: currentNovel.value.novel_id, // 关联小说ID
   } as CreateConversationDto;
 
-  // 发送请求
-  await createConversation(createConversationDto);
-}
+  await createConversation(
+    createConversationDto,
+    (data) => {
+      console.log('对话流数据:', data);
+      assistantResponse.value.content += data;
+    },
+    () => {
+      // 流结束时的处理
+      console.log('流已结束');
+    },
+    (error) => {
+      console.error('对话发送错误:', error);
+      assistantResponse.value.content = `发生错误: ${error.message}`;
+    }
+  );
+};
 
 onMounted(async () => {
   const novelId = route.params.id;

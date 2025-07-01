@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Request
 from core.entity.dto.ConversationDto import CreateConversationDto
 from core.mapper.ConversationMapper import ConversationMapper
 from core.service.ConversationService import ConversationService
+from core.service.ProviderService import ProviderService
 from core.utils.LogConfig import get_logger
 
 logging = get_logger(__name__)
@@ -11,7 +12,7 @@ conversation_router = APIRouter(prefix="/api/conversation", tags=["Conversation"
 
 
 def get_conversation_service():
-    return ConversationService(ConversationMapper())
+    return ConversationService(ConversationMapper(), ProviderService(model="deepseek-chat", streaming=True))
 
 
 @conversation_router.post("/")

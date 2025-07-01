@@ -34,3 +34,13 @@ class FileError(ApiError):
             status_code=500,
             error_code="FILE_OPERATION_ERROR"
         )
+
+
+class StreamingError(ApiError):
+
+    def __init__(self, message: str):
+        super().__init__(
+            message,
+            status_code=500,
+            error_code="STREAMING_OPERATION_ERROR"
+        )

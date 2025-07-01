@@ -92,7 +92,7 @@ class NovelMapper(NovelMapperInterface):
                 scenes_dto = []
                 for scene in sorted_scenes:
                     sorted_conversations = sorted(scene.conversation, key=lambda conv: conv.conversation_id,
-                                                  reverse=True)  # 假设按 create_time 降序
+                                                  reverse=False)  # 假设按 create_time 降序
 
                     conversations_dto = [
                         ResponseConversationDto(
@@ -141,9 +141,63 @@ class NovelMapper(NovelMapperInterface):
             logging.error(f"获取小说 ID {novel_id}失败，{str(e)}")
             raise DatabaseError(str(e))
 
+    def generate_scene_prompts(self, novel_id: int) -> List[str]:
+        """
+        将 ResponseAllNovelDto 对象转换为按情景划分的 prompt 列表。
+
+        Args:
+            novel_id: ResponseAllNovelDto 对象，包含小说、章节、情景和对话信息。
+
+        Returns:
+            List[str]: 按情景划分的 prompt 字符串列表。
+        """
+        novel = self.get_novel_by_id(novel_id)
+
+        prompts = []
+
+        # 遍历章节和情景
+        if novel.chapter:
+            for chapter in novel.chapter:
+                chapter_title = chapter.chapter_title or f"章节 {chapter.chapter_number}"
+                chapter_desc = chapter.chapter_desc or "无描述"
+
+                if chapter.scene:
+                    for scene in chapter.scene:
+                        # 构造单个情景的 prompt
+                        prompt = f"### 情景 Prompt\n\n"
+                        prompt += "#### 小说信息\n"
+                        prompt += f"- **名字**: {novel.novel_name}\n"
+                        prompt += f"- **描述**: {novel.novel_desc}\n\n"
+
+                        prompt += "#### 章节信息\n"
+                        prompt += f"- **章节**: {chapter_title}\n"
+                        prompt += f"- **描述**: {chapter_desc}\n\n"
+
+                        prompt += "#### 情景信息\n"
+                        prompt += f"- **情景名称**: {scene.scene_name}\n"
+                        prompt += f"- **情景描述**: {scene.scene_desc or '无描述'}\n"
+
+                        # 对话信息
+                        if scene.conversation:
+                            prompt += "- **对话**:\n"
+                            for conv in scene.conversation:
+                                prompt += f"  - **角色**: {conv.role}, **内容**: \"{conv.content}\"\n"
+                        else:
+                            prompt += "- **对话**: 暂无\n"
+
+                        prompts.append(prompt)
+
+        return prompts
+
 
 if __name__ == '__main__':
     generate_table_mapping()
     mapper = NovelMapper()
-    novel = mapper.get_novel_by_id(1)
-    print(novel)
+    # mapper.create_novel(CreateNovelDto(
+    #     novel_name="人间",
+    #     novel_desc="这是一个关于人性与救赎的小说",
+    #     create_time=datetime.now(),
+    # ))
+    prompts = mapper.generate_scene_prompts(1)
+    for prompt in prompts:
+        print(prompt)

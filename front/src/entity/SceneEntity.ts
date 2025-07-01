@@ -1,10 +1,10 @@
 import type { ConversationEntity } from "./ConversationEntity";
 
 export interface SceneEntity {
-    scene_id: number;
+    scene_id?: number;
     scene_name: string;
     scene_desc?: string;
-    create_time: Date;
+    create_time?: Date;
     parent?: number;
     chapter?: number;
 }

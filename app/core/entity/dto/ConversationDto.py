@@ -13,6 +13,9 @@ class CreateConversationDto(BaseModel):
     parent: Optional[int] = None
     scene: int
 
+    # 创建对话时，需要获取整个小说的内容，所以需要novel_id
+    novel: Optional[int] = None
+
 
 class ResponseConversationDto(CreateConversationDto):
     conversation_id: int
