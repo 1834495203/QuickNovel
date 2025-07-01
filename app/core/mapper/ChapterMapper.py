@@ -43,8 +43,8 @@ if __name__ == '__main__':
     generate_table_mapping()
     mapper = ChapterMapper()
     mapper.create_chapter(CreateChapterDto(
-        chapter_title="梦开始的地方",
-        chapter_desc="主角名为裴橘(女)，是一位普通的大学生，她很善良，在福利院生活，但是总是被欺负。",
+        chapter_title="现实的回响",
+        chapter_desc="三年后，主角裴橘(女)考上了大学，可是她的好朋友清妍却不在人世。",
         create_time=datetime.now(),
-        chapter_number=1,
+        chapter_number=2,
         novel=1))

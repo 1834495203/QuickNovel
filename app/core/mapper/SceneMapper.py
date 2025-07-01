@@ -43,7 +43,7 @@ if __name__ == '__main__':
     scene_mapper = SceneMapper()
     scene_mapper.create_scene(
         CreateSceneDto(
-            scene_name="福利院场景",
-            scene_desc="裴橘又被其他同学欺负了。现在是盛夏的夜晚，他们在把裴橘带到福利院的后花园。",
+            scene_name="大学场景-傍晚-寝室",
+            scene_desc="夜深人静，只有裴橘桌子上有微弱的灯光。",
             create_time=datetime.now(),
-            chapter=1))
+            chapter=2))
