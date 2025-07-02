@@ -17,7 +17,10 @@ class NovelEntity(db.Entity):
     world = Set('WorldEntity')
 
     # 多对多关联角色
-    character = Set('CharacterEntity')
+    # character = Set('CharacterEntity')
+
+    # 多对一关联小说角色表
+    character = Set('CharacterNovelEntity')
 
 
 # 小说章节信息

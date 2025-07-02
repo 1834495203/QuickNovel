@@ -15,7 +15,10 @@ class CharacterEntity(db.Entity):
     distinctive = Set('Distinctive')
 
     # 多对多关联小说
-    novel = Set('NovelEntity')
+    # novel = Set('NovelEntity')
+
+    # 多对一关联小说角色表
+    novel = Set('CharacterNovelEntity')
 
     # 反向引用
     sender_character = Set('ConversationEntity', reverse='sender_character')

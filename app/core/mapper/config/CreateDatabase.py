@@ -2,6 +2,7 @@ from core.entity.po.CharacterEntity import *
 from core.entity.po.ConversationEntity import *
 from core.entity.po.NovelEntity import *
 from core.entity.po.WorldEntity import *
+from core.entity.po.CharacterNovelEntity import *
 
 
 def create_table():

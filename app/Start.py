@@ -12,6 +12,7 @@ from controller.CharacterController import character_router
 from controller.ConversationController import conversation_router
 from controller.NovelController import novel_router
 from controller.SceneController import scene_router
+from controller.WorldController import world_router
 from core.entity.ResponseEntity import error
 from core.mapper.config.DatabaseConfig import db
 from core.utils.CustomizeException import ApiError
@@ -55,6 +56,7 @@ app.include_router(chapter_router)
 app.include_router(novel_router)
 app.include_router(scene_router)
 app.include_router(conversation_router)
+app.include_router(world_router)
 
 @app.get("/")
 async def root():

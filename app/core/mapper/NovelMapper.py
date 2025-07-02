@@ -5,8 +5,9 @@ from pony.orm import db_session, commit
 
 from core.entity.dto.ChapterDto import ResponseAllChapterDto
 from core.entity.dto.ConversationDto import ResponseConversationDto
-from core.entity.dto.NovelDto import CreateNovelDto, ResponseNovelDto, ResponseAllNovelDto
+from core.entity.dto.NovelDto import CreateNovelDto, ResponseNovelDto, ResponseAllNovelDto, CreateCharacter2NovelDto
 from core.entity.dto.SceneDto import ResponseSceneDto
+from core.entity.po.CharacterNovelEntity import CharacterNovelEntity
 from core.entity.po.NovelEntity import NovelEntity, ChapterEntity, SceneEntity
 from core.mapper.config.CreateDatabase import generate_table_mapping
 from core.utils.CustomizeException import DatabaseError, NotFoundError

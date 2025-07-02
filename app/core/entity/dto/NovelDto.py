@@ -12,6 +12,11 @@ class CreateNovelDto(BaseModel):
     create_time: datetime
 
 
+class CreateCharacter2NovelDto(BaseModel):
+    novel_id: int
+    character_id: int
+
+
 class ResponseNovelDto(BaseModel):
     novel_id: int
     novel_name: str
