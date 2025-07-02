@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Request
 
 from core.entity.dto.ConversationDto import CreateConversationDto
+from core.mapper.CharacterMapper import CharacterMapper
+from core.mapper.CharacterNovelMapper import CharacterNovelMapper
 from core.mapper.ConversationMapper import ConversationMapper
 from core.mapper.NovelMapper import NovelMapper
 from core.service.ConversationService import ConversationService
@@ -14,7 +16,13 @@ conversation_router = APIRouter(prefix="/api/conversation", tags=["Conversation"
 
 def get_conversation_service():
     return ConversationService(ConversationMapper(), ProviderService(
-        novel_mapper=NovelMapper(), model="deepseek-chat", streaming=True))
+        novel_mapper=NovelMapper(),
+        character_novel_mapper=CharacterNovelMapper(
+            character_mapper=CharacterMapper(),
+            novel_mapper=NovelMapper(),
+        ),
+        model="deepseek-chat",
+        streaming=True))
 
 
 @conversation_router.post("/")

@@ -262,10 +262,3 @@ class CharacterMapper(CharacterMapperInterface):
 if __name__ == '__main__':
     generate_table_mapping()
     character_mapper = CharacterMapper()
-    select_character = character_mapper.select_character_by_id(1)
-
-    select_character.avatar = "avatar"
-    select_character.speak = [SpeakingDto(role="role", content="content", reply="reply")]
-    select_character.trait = []
-
-    character_mapper.update_character(select_character)

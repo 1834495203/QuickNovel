@@ -4,6 +4,7 @@ from core.entity.po.CharacterEntity import CharacterEntity
 from core.entity.po.NovelEntity import NovelEntity
 from core.mapper.config.DatabaseConfig import db
 
+
 # 小说和角色的多对多中间表
 class CharacterNovelEntity(db.Entity):
     character_novel_id = PrimaryKey(int, auto=True)

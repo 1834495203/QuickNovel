@@ -1,4 +1,5 @@
 from abc import ABC
+from datetime import datetime
 from typing import List
 
 from pony.orm import db_session, commit
@@ -194,11 +195,3 @@ class NovelMapper(NovelMapperInterface):
 if __name__ == '__main__':
     generate_table_mapping()
     mapper = NovelMapper()
-    # mapper.create_novel(CreateNovelDto(
-    #     novel_name="人间",
-    #     novel_desc="这是一个关于人性与救赎的小说",
-    #     create_time=datetime.now(),
-    # ))
-    prompts = mapper.generate_scene_prompts(1)
-    for prompt in prompts:
-        print(prompt)

@@ -8,7 +8,6 @@ from core.entity.ResponseEntity import ResponseModel, success
 from core.entity.dto.ConversationDto import CreateConversationDto, ResponseConversationDto
 from core.mapper.ConversationMapper import ConversationMapperInterface
 from core.service.ProviderService import ProviderService
-from core.utils.CustomizeException import StreamingError
 from core.utils.LogConfig import get_logger
 
 logging = get_logger(__name__)
@@ -54,8 +53,8 @@ class ConversationService:
             except asyncio.CancelledError:
                 logging.error("请求被取消。")
             except Exception as e:
-                logging.error(f"流式生成过程中发生错误: {e}")
-                raise StreamingError(message=f"流式生成过程中发生错误: {e}")
+                logging.error(f"流式生成过程中发生错误: {str(e)}")
+                yield f"error: 流式生成失败: {str(e)}"
 
         # 使用 StreamingResponse 包装事件生成器
         return StreamingResponse(event_generator(content), media_type="text/event-stream")

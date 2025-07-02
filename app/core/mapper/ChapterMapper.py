@@ -43,8 +43,8 @@ if __name__ == '__main__':
     generate_table_mapping()
     mapper = ChapterMapper()
     mapper.create_chapter(CreateChapterDto(
-        chapter_title="现实的回响",
-        chapter_desc="三年后，主角裴橘(女)考上了大学，可是她的好朋友清妍却不在人世。",
+        chapter_title=" 夜色的倾诉",
+        chapter_desc="李先生在一次会面中向清妍敞开心扉，分享自己的孤独与婚姻的失败。清妍第一次感受到客户不仅仅是交易对象，而是有故事的人。她开始思考自己的生活选择，同时对李先生的关怀产生复杂的情感。",
         create_time=datetime.now(),
-        chapter_number=2,
+        chapter_number=1,
         novel=1))

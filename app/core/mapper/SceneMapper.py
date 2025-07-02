@@ -43,7 +43,7 @@ if __name__ == '__main__':
     scene_mapper = SceneMapper()
     scene_mapper.create_scene(
         CreateSceneDto(
-            scene_name="大学场景-傍晚-寝室",
-            scene_desc="夜深人静，只有裴橘桌子上有微弱的灯光。",
+            scene_name="酒店场景-夜晚",
+            scene_desc="夏日夜晚的凉风吹散了白天的热气，清妍身穿浅色连衣裙，肉色丝袜和玛丽珍鞋赴约。",
             create_time=datetime.now(),
-            chapter=2))
+            chapter=1))

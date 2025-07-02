@@ -4,6 +4,7 @@ from typing import AsyncGenerator, List
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_openai import ChatOpenAI
 
+from core.mapper.CharacterNovelMapper import CharacterNovelMapperInterface
 from core.mapper.NovelMapper import NovelMapperInterface
 from core.utils.LogConfig import get_logger
 
@@ -13,11 +14,13 @@ logging = get_logger(__name__)
 class ProviderService:
     def __init__(self,
                  novel_mapper: NovelMapperInterface,
+                 character_novel_mapper: CharacterNovelMapperInterface,
                  model: str,
                  streaming: bool,
                  temperature: float = 1,
-                 base_url: str = "https://api.deepseek.com"):
+                 base_url: str = "https://api.deepseek.com/"):
         self.novel_mapper = novel_mapper
+        self.character_novel_mapper = character_novel_mapper
 
         self.llm = ChatOpenAI(
             model=model,
@@ -36,23 +39,29 @@ class ProviderService:
         # 不需要 prompt_template 了，直接构建消息列表
 
         novel_messages = []
+        characters_info = []
         if novel_id is not None:
             novel_messages = self.generate_scene_messages(novel_id)  # 修改这里，返回消息列表
+            characters_info = self.generate_character_messages(novel_id)
 
         # 构建最终的 messages 列表
         messages = [
             SystemMessage(content="""
-你是一个交互式小说系统，负责扮演故事中的所有角色。
-每个角色的知识有限，没有角色能完全了解其他角色或事件的真相。
-你无法读取用户的内心想法，只能根据用户的行动通过扮演其他角色进行反应。
-角色应保持一致的性格，展现多样化的情感和反应，避免单一化刻画。
-场景描述应包括环境细节、氛围和感官体验，以营造沉浸感。
-角色应具有清晰的关系网络和互动模式。
-对话应反映每个角色的独特语言风格、词汇习惯和思维方式。
-角色应有自己的目标、恐惧和动机，这些会影响他们的决策。
-场景应具有连贯性和进展性，角色反应需考虑过往互动和个人背景。
+你是一个交互式小说系统，负责扮演故事中的所有角色，并生成对应的交互和场景描述。
+- 每个角色的知识有限，没有角色能完全了解其他角色或事件的真相。
+- 用户可以扮演任何角色，也可以作为上帝视角。
+- 角色应保持一致的性格，展现多样化的情感和反应，避免单一化刻画。
+- 场景描述应包括环境细节、氛围和感官体验，以营造沉浸感。
+- 角色应具有清晰的关系网络和互动模式。
+- 对话应反映每个角色的独特语言风格、词汇习惯和思维方式。
+- 角色应有自己的目标、恐惧和动机，这些会影响他们的决策。
+- 场景应具有连贯性，角色反应需考虑过往互动和个人背景。
+- 对话字数不能过少，时刻注意章节和情景设定，事件之间不能自相矛盾。
             """)
         ]
+
+        # 添加角色信息
+        messages.extend(characters_info)
 
         # 添加历史小说消息
         messages.extend(novel_messages)
@@ -60,22 +69,6 @@ class ProviderService:
         logging.info(f"添加历史小说消息:{novel_messages}")
         logging.info(f"用户消息:{prompt}")
 
-        # 添加当前用户输入
-        # messages.append(HumanMessage(content=prompt))
-
-        # 创建 LangChain 的链
-        # 这里可以直接使用 self.llm.astream(messages)
-        # 或者如果想保持 LangChain chain 的结构，可以这样定义：
-        from langchain_core.runnables import RunnablePassthrough
-        # LangChain 表达式语言允许你直接传递消息列表
-        # 或者通过 RunnablePassthrough 来传递
-        chain = self.llm  # 直接将 messages 传递给 LLM
-
-        # 流式生成响应
-        # for chunk in chain.astream(messages): # 如果 chain 就是 self.llm
-        # 但是如果用 RunnablePassthrough 的话
-        # for chunk in ({"messages": messages} | self.llm).astream({}):
-        # 更简洁的方式是直接调用 LLM 的 invoke 或 astream 方法 with the messages list
         async for chunk in self.llm.astream(messages):
             # 提取 LLM 输出的内容
             content = chunk.content
@@ -138,5 +131,34 @@ class ProviderService:
                                 # else:
                                 #     messages.append(HumanMessage(content=f"{conv.role}: {conv.content}"))
 
+        return messages
+
+    def generate_character_messages(self, novel_id: int) -> List[HumanMessage]:
+        characters = self.character_novel_mapper.get_connect_characters_by_novel_id(novel_id)
+        messages = []
+        for character in characters:
+            prompt = f"角色名称: {character.name}\n"
+
+            prompt += f"描述: {character.description}\n\n"
+
+            prompt += "背景故事:\n"
+            prompt += f"{character.background_story}\n\n"
+
+            prompt += "性格特征:\n"
+            for trait in character.trait:
+                prompt += f"- {trait.label}: {trait.description}\n"
+            prompt += "\n"
+
+            prompt += "标志性特征:\n"
+            for distinctive in character.distinctive:
+                prompt += f"- {distinctive.name}: {distinctive.content}\n"
+            prompt += "\n"
+
+            prompt += "对话示例:\n"
+            for speak in character.speak:
+                prompt += f"{speak.role}: {speak.content}\n"
+                prompt += f"回复: {speak.reply}\n"
+
+            messages.append(HumanMessage(content=prompt))
         return messages
 
